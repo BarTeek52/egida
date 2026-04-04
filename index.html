@@ -186,7 +186,7 @@
 
                 const palladaBlue = [0, 103, 177];
                 
-                // Ładowanie Logo z repozytorium
+                // Ładowanie Logo z repozytorium (Plik musi być na GitHubie w tym samym folderze)
                 await new Promise((resolve) => {
                     const img = new Image();
                     img.onload = () => { docPdf.addImage(img, 'PNG', 20, 15, 25, 25); resolve(); };
