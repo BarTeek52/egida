@@ -33,6 +33,8 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         #root:empty { 
             background: #f8fafc; 
@@ -283,7 +285,7 @@
                         ...formData, updatedAt: new Date().toISOString()
                     });
                     
-                    // Generowanie PDF (Zgodnie z Twoim zoptymalizowanym szablonem)
+                    // Generowanie PDF
                     const { jsPDF } = window.jspdf;
                     const docPdf = new jsPDF();
                     
@@ -481,20 +483,32 @@
 
             return (
                 <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc] fade-in">
-                    <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-8 shrink-0">
-                        <div className="flex items-center gap-3 mb-10">
+                    <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-6 shrink-0 overflow-y-auto hide-scrollbar">
+                        <div className="flex items-center gap-3 mb-8 px-2">
                             <div className="p-2 bg-[#0067b1] rounded-xl text-white shadow-lg"><Icon name="Shield" /></div>
                             <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
                         </div>
                         <nav className="flex-1 space-y-2">
-                            <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
-                            <button onClick={() => setModule('wypowiedzenia')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'wypowiedzenia' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="FileText" size={16}/> Generator</button>
+                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] px-3 mb-2">Główne</p>
+                            <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
+                            <button onClick={() => setModule('baza')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'baza' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><Icon name="Database" size={16}/> Baza Klientów</button>
+                            <button onClick={() => setModule('wypowiedzenia')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'wypowiedzenia' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><Icon name="FileText" size={16}/> Wypowiedzenia</button>
+                            
+                            <div className="pt-6 pb-2 px-3">
+                                <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Wkrótce</p>
+                            </div>
+                            <button className="w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-300 opacity-60 cursor-not-allowed transition-all"><Icon name="RotateCw" size={16}/> Wznowienia</button>
+                            <button className="w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-300 opacity-60 cursor-not-allowed transition-all"><Icon name="Tags" size={16}/> Oferty</button>
+                            <button className="w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-300 opacity-60 cursor-not-allowed transition-all"><Icon name="GitCompare" size={16}/> Porównania</button>
+                            <button className="w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-300 opacity-60 cursor-not-allowed transition-all"><Icon name="BarChart3" size={16}/> Statystyki</button>
                         </nav>
-                        <button onClick={() => auth.signOut()} className="flex items-center gap-3 p-4 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={16}/> Wyloguj</button>
+                        <div className="pt-4 mt-auto">
+                            <button onClick={() => auth.signOut()} className="w-full flex items-center gap-3 p-3 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={16}/> Wyloguj</button>
+                        </div>
                     </aside>
 
                     <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-                        {module === 'dashboard' ? (
+                        {module === 'dashboard' && (
                             <div className="space-y-8 max-w-4xl">
                                 <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
                                 <div className="grid grid-cols-2 gap-6">
@@ -503,16 +517,30 @@
                                         <p className="text-5xl font-black text-slate-800">{records.length}</p>
                                     </div>
                                     <button onClick={() => setModule('wypowiedzenia')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
-                                        Generator PDF <Icon name="ChevronRight" />
+                                        Wypowiedzenia <Icon name="ChevronRight" />
                                     </button>
                                 </div>
                             </div>
-                        ) : (
+                        )}
+                        
+                        {module === 'baza' && (
+                            <div className="flex flex-col items-center justify-center h-[70vh] text-center fade-in">
+                                <div className="w-24 h-24 bg-slate-100 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                                    <Icon name="Database" size={40} className="text-slate-300" />
+                                </div>
+                                <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-800 mb-3">Baza Klientów</h2>
+                                <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest max-w-sm leading-relaxed">
+                                    Moduł jest w trakcie wdrażania. Wkrótce zyskasz tutaj pełny dostęp do historii i zarządzania swoimi klientami.
+                                </p>
+                            </div>
+                        )}
+
+                        {module === 'wypowiedzenia' && (
                             <div className="max-w-4xl mx-auto space-y-6 pb-20 fade-in">
                                 <header className="bg-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 border border-slate-200">
                                     <div className="flex items-center gap-3">
                                         <div className="bg-blue-600 p-3 rounded-xl shadow-lg shadow-blue-200"><Icon name="FileText" className="text-white" /></div>
-                                        <h1 className="text-xl font-bold text-slate-800 tracking-tight">Generator wypowiedzeń OC</h1>
+                                        <h1 className="text-xl font-bold text-slate-800 tracking-tight">Wypowiedzenia OC</h1>
                                     </div>
                                     <button onClick={() => setShowResetConfirm(true)} className="w-full sm:w-auto px-6 py-2.5 bg-red-50 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all">Wyczyść formularz</button>
                                 </header>
