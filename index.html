@@ -5,17 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Egida OS | Grupa Pallada Trans</title>
     
-    <!-- 1. Biblioteki UI (Tailwind i React) - Zmiana serwerów na stabilne CDNJS -->
+    <!-- 1. GŁÓWNE SERWERY (jsDelivr - omijają większość blokad firmowych, bez crossorigin) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.3/babel.min.js"></script>
     
-    <!-- 2. Narzędzia (Ikony i PDF) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- 2. SYSTEM ZAPASOWY (jeśli główne zawiodą) -->
+    <script>
+        if (typeof window.React === 'undefined') {
+            document.write('<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>');
+            document.write('<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>');
+        }
+    </script>
     
-    <!-- 3. Firebase SDK (Wersja COMPAT) -->
+    <!-- 3. Narzędzia (Ikony i PDF) -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    
+    <!-- 4. Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -58,7 +66,6 @@
                     <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Błąd ładowania systemu</h2>
                     <p>${msg}</p>
                     <p style="margin-top:1rem; opacity:0.5">Linia: ${line}</p>
-                    <p style="margin-top:1rem">Odśwież stronę (Ctrl + F5) lub wyłącz AdBlocka. Jeśli błąd nadal występuje, skontaktuj się z administratorem.</p>
                 </div>
             `;
             return false;
@@ -68,15 +75,18 @@
         if (typeof window.React === 'undefined' || typeof window.ReactDOM === 'undefined') {
             document.getElementById('root').innerHTML = `
                 <div class="error-box">
-                    <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Zablokowane skrypty</h2>
-                    <p>Przeglądarka zablokowała pobranie kluczowych plików systemu.</p>
-                    <p style="margin-top:1rem; font-weight:bold;">Spróbuj wyłączyć program blokujący reklamy (np. uBlock, AdBlock) lub tryb prywatny i odśwież stronę.</p>
+                    <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Zablokowane skrypty (Firewall/AdBlock)</h2>
+                    <p>Twoja przeglądarka lub sieć firmowa blokuje dostęp do kluczowych plików.</p>
+                    <p style="margin-top:1rem; font-weight:bold;">Jak to naprawić?</p>
+                    <ul style="margin-top:0.5rem; text-align:left; padding-left: 20px;">
+                        <li>Wyłącz wtyczki typu AdBlock / uBlock.</li>
+                        <li><strong>Otwórz ten link na telefonie (z użyciem internetu komórkowego LTE), aby sprawdzić, czy problemem jest sieć Wi-Fi w biurze.</strong></li>
+                    </ul>
                 </div>
             `;
             throw new Error("Biblioteka React została zablokowana przez przeglądarkę.");
         }
 
-        // Jawne odwoływanie się do obiektów przeglądarki (omija błędy kompilacji)
         const React = window.React;
         const ReactDOM = window.ReactDOM;
         const { useState, useEffect } = React;
@@ -90,7 +100,6 @@
             appId: "1:263654193064:web:70adeef7eefbd944364f9d"
         };
 
-        // Inicjalizacja usług
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
