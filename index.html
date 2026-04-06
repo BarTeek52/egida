@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Egida OS | Grupa Pallada Trans</title>
     
-    <!-- 1. Biblioteki UI (Tailwind i React) -->
+    <!-- 1. Biblioteki UI (Tailwind i React) - Zmiana serwerów na stabilne CDNJS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin="anonymous"></script>
     
     <!-- 2. Narzędzia (Ikony i PDF) -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -58,11 +58,27 @@
                     <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Błąd ładowania systemu</h2>
                     <p>${msg}</p>
                     <p style="margin-top:1rem; opacity:0.5">Linia: ${line}</p>
-                    <p style="margin-top:1rem">Odśwież stronę (Ctrl + F5). Jeśli błąd nadal występuje, skontaktuj się z administratorem.</p>
+                    <p style="margin-top:1rem">Odśwież stronę (Ctrl + F5) lub wyłącz AdBlocka. Jeśli błąd nadal występuje, skontaktuj się z administratorem.</p>
                 </div>
             `;
+            return false;
         };
 
+        // ZABEZPIECZENIE: Sprawdzanie czy React na pewno się pobrał
+        if (typeof window.React === 'undefined' || typeof window.ReactDOM === 'undefined') {
+            document.getElementById('root').innerHTML = `
+                <div class="error-box">
+                    <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Zablokowane skrypty</h2>
+                    <p>Przeglądarka zablokowała pobranie kluczowych plików systemu.</p>
+                    <p style="margin-top:1rem; font-weight:bold;">Spróbuj wyłączyć program blokujący reklamy (np. uBlock, AdBlock) lub tryb prywatny i odśwież stronę.</p>
+                </div>
+            `;
+            throw new Error("Biblioteka React została zablokowana przez przeglądarkę.");
+        }
+
+        // Jawne odwoływanie się do obiektów przeglądarki (omija błędy kompilacji)
+        const React = window.React;
+        const ReactDOM = window.ReactDOM;
         const { useState, useEffect } = React;
 
         const firebaseConfig = {
@@ -175,10 +191,10 @@
                 const id = form.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
                 await db.collection("pojazdy").doc(id).set({ ...form, updatedAt: new Date().toISOString() });
                 
-                const pdf = new jspdf.jsPDF();
+                const pdf = new window.jspdf.jsPDF();
                 pdf.setFontSize(22); pdf.setTextColor(0, 103, 177); pdf.text("WYPOWIEDZENIE OC", 20, 30);
-                doc.setFontSize(12); doc.setTextColor(0); doc.text(`Klient: ${form.imieNazwisko}`, 20, 50);
-                doc.text(`Nr Rej: ${form.nrRejestracyjny}`, 20, 60);
+                pdf.setFontSize(12); pdf.setTextColor(0); pdf.text(`Klient: ${form.imieNazwisko}`, 20, 50);
+                pdf.text(`Nr Rej: ${form.nrRejestracyjny}`, 20, 60);
                 pdf.save(`wypowiedzenie_${id}.pdf`);
                 alert("Zapisano i pobrano PDF");
             };
