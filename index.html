@@ -248,9 +248,19 @@
                 setShowResetConfirm(false);
             };
 
-            const getInputClass = (fieldName) => {
-                const base = "w-full p-3 rounded-xl border outline-none transition-all text-black font-medium placeholder:text-slate-400 placeholder:text-sm placeholder:font-normal";
+            const getInputClass = (fieldName, type = 'text') => {
                 const isError = errors.includes(fieldName);
+                const isEmpty = !formData[fieldName];
+                
+                let base = "w-full p-3 rounded-xl border outline-none transition-all placeholder:text-slate-400 placeholder:text-sm placeholder:font-normal";
+                
+                // Jeśli to select lub data i nie ma wartości, naśladujemy styl placeholder'a
+                if ((type === 'select' || type === 'date') && isEmpty) {
+                    base += " text-slate-400 text-sm font-normal";
+                } else {
+                    base += " text-black font-medium";
+                }
+
                 const status = isError 
                     ? "border-red-500 bg-red-50 ring-2 ring-red-100 shadow-[0_0_10px_rgba(239,68,68,0.2)]" 
                     : "border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100";
@@ -598,14 +608,14 @@
                                                 </div>
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ubezpieczyciel</label>
-                                                    <select className={getInputClass('ubezpieczyciel')} value={formData.ubezpieczyciel} onChange={(e) => setFormData({...formData, ubezpieczyciel: e.target.value})}>
+                                                    <select className={getInputClass('ubezpieczyciel', 'select')} value={formData.ubezpieczyciel} onChange={(e) => setFormData({...formData, ubezpieczyciel: e.target.value})}>
                                                         <option value="">Wybierz ubezpieczyciela</option>
-                                                        {TOWARZYSTWA.map(t => <option key={t} value={t}>{t}</option>)}
+                                                        {TOWARZYSTWA.map(t => <option key={t} value={t} className="text-black font-medium">{t}</option>)}
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col sm:flex-row gap-3">
                                                     <div className="flex-1"><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nr polisy</label><input placeholder="Numer polisy" className={getInputClass('numerPolisy')} value={formData.numerPolisy} onChange={(e) => setFormData({...formData, numerPolisy: e.target.value})} /></div>
-                                                    <div className="flex-1"><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data rozwiązania</label><input type="date" className={getInputClass('dataRozwiazania')} value={formData.dataRozwiazania} onChange={(e) => setFormData({...formData, dataRozwiazania: e.target.value})} /></div>
+                                                    <div className="flex-1"><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data rozwiązania</label><input type="date" className={getInputClass('dataRozwiazania', 'date')} value={formData.dataRozwiazania} onChange={(e) => setFormData({...formData, dataRozwiazania: e.target.value})} /></div>
                                                 </div>
                                             </div>
                                         </section>
@@ -613,7 +623,7 @@
                                         <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 md:col-span-2 space-y-4">
                                             <h2 className="font-bold text-blue-600 uppercase text-xs tracking-widest border-b pb-2 mb-4">Miejscowość i Data Podpisania</h2>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data podpisania</label><input type="date" className={getInputClass('dataPodpisania')} value={formData.dataPodpisania} onChange={(e) => setFormData({...formData, dataPodpisania: e.target.value})} /></div>
+                                                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data podpisania</label><input type="date" className={getInputClass('dataPodpisania', 'date')} value={formData.dataPodpisania} onChange={(e) => setFormData({...formData, dataPodpisania: e.target.value})} /></div>
                                                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Miejscowość podpisania</label><input placeholder="Szczecin" className={getInputClass('miejscowoscWystawienia')} value={formData.miejscowoscWystawienia} onChange={(e) => setFormData({...formData, miejscowoscWystawienia: formatTitleCase(e.target.value)})} /></div>
                                             </div>
                                         </section>
