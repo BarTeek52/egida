@@ -1,269 +1,276 @@
-<!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egida OS | Grupa Pallada Trans</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Egida OS | Grupa Pallada Trans</title>
+
+<!-- 1. GŁÓWNE SERWERY (jsDelivr - omijają większość blokad firmowych, bez crossorigin) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.3/babel.min.js"></script>
+
+<!-- 2. SYSTEM ZAPASOWY (jeśli główne zawiodą) -->
+<script>
+    if (typeof window.React === 'undefined') {
+        document.write('<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>');
+        document.write('<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>');
+    }
+</script>
+
+<!-- 3. Narzędzia (Ikony i PDF) -->
+<script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<!-- 4. Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
-    <!-- 1. GŁÓWNE SERWERY (jsDelivr - omijają większość blokad firmowych, bez crossorigin) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.3/babel.min.js"></script>
+    #root:empty { 
+        background: #f8fafc; 
+        height: 100vh; 
+        display: flex; 
+        flex-direction: column;
+        align-items: center; 
+        justify-content: center; 
+        font-weight: 900; 
+        color: #0067b1;
+        font-size: 14px;
+    }
+    #root:empty::after { 
+        content: "URUCHAMIANIE EGIDA OS..."; 
+        letter-spacing: 0.3em;
+        animation: blink 1.5s infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     
-    <!-- 2. SYSTEM ZAPASOWY (jeśli główne zawiodą) -->
-    <script>
-        if (typeof window.React === 'undefined') {
-            document.write('<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>');
-            document.write('<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>');
-        }
-    </script>
-    
-    <!-- 3. Narzędzia (Ikony i PDF) -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    
-    <!-- 4. Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
-        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        #root:empty { 
-            background: #f8fafc; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 900; 
-            color: #0067b1;
-            font-size: 14px;
-        }
-        #root:empty::after { 
-            content: "URUCHAMIANIE EGIDA OS..."; 
-            letter-spacing: 0.3em;
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        
-        .error-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 2rem; border-radius: 2rem; max-width: 500px; margin: 2rem auto; font-size: 12px; }
-    </style>
+    .error-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 2rem; border-radius: 2rem; max-width: 500px; margin: 2rem auto; font-size: 12px; }
+</style>
+
+
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
 
-    <script type="text/babel">
-        // Wyłapywanie błędów startowych
-        window.onerror = function(msg, url, line) {
-            document.getElementById('root').innerHTML = `
-                <div class="error-box">
-                    <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Błąd ładowania systemu</h2>
-                    <p>${msg}</p>
-                    <p style="margin-top:1rem; opacity:0.5">Linia: ${line}</p>
-                </div>
-            `;
-            return false;
-        };
+<script type="text/babel">
+    // Wyłapywanie błędów startowych
+    window.onerror = function(msg, url, line) {
+        document.getElementById('root').innerHTML = `
+            <div class="error-box">
+                <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Błąd ładowania systemu</h2>
+                <p>${msg}</p>
+                <p style="margin-top:1rem; opacity:0.5">Linia: ${line}</p>
+            </div>
+        `;
+        return false;
+    };
 
-        // ZABEZPIECZENIE: Sprawdzanie czy React na pewno się pobrał
-        if (typeof window.React === 'undefined' || typeof window.ReactDOM === 'undefined') {
-            document.getElementById('root').innerHTML = `
-                <div class="error-box">
-                    <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Zablokowane skrypty (Firewall/AdBlock)</h2>
-                    <p>Twoja przeglądarka lub sieć firmowa blokuje dostęp do kluczowych plików.</p>
-                    <p style="margin-top:1rem; font-weight:bold;">Jak to naprawić?</p>
-                    <ul style="margin-top:0.5rem; text-align:left; padding-left: 20px;">
-                        <li>Wyłącz wtyczki typu AdBlock / uBlock.</li>
-                        <li><strong>Otwórz ten link na telefonie (z użyciem internetu komórkowego LTE), aby sprawdzić, czy problemem jest sieć Wi-Fi w biurze.</strong></li>
-                    </ul>
-                </div>
-            `;
-            throw new Error("Biblioteka React została zablokowana przez przeglądarkę.");
-        }
+    // ZABEZPIECZENIE: Sprawdzanie czy React na pewno się pobrał
+    if (typeof window.React === 'undefined' || typeof window.ReactDOM === 'undefined') {
+        document.getElementById('root').innerHTML = `
+            <div class="error-box">
+                <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Zablokowane skrypty (Firewall/AdBlock)</h2>
+                <p>Twoja przeglądarka lub sieć firmowa blokuje dostęp do kluczowych plików.</p>
+                <p style="margin-top:1rem; font-weight:bold;">Jak to naprawić?</p>
+                <ul style="margin-top:0.5rem; text-align:left; padding-left: 20px;">
+                    <li>Wyłącz wtyczki typu AdBlock / uBlock.</li>
+                    <li><strong>Otwórz ten link na telefonie (z użyciem internetu komórkowego LTE), aby sprawdzić, czy problemem jest sieć Wi-Fi w biurze.</strong></li>
+                </ul>
+            </div>
+        `;
+        throw new Error("Biblioteka React została zablokowana przez przeglądarkę.");
+    }
 
-        const React = window.React;
-        const ReactDOM = window.ReactDOM;
-        const { useState, useEffect } = React;
+    const React = window.React;
+    const ReactDOM = window.ReactDOM;
+    const { useState, useEffect } = React;
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyD8ioxiSN03mI_ppLRezGdj-b5hCB7-hwg",
-            authDomain: "egida-os.firebaseapp.com",
-            projectId: "egida-os",
-            storageBucket: "egida-os.firebasestorage.app",
-            messagingSenderId: "263654193064",
-            appId: "1:263654193064:web:70adeef7eefbd944364f9d"
-        };
+    // TWOJA POPRAWNA KONFIGURACJA
+    const firebaseConfig = {
+        apiKey: "AIzaSyD8ioxiSNO3mI_ppLRezGdj-b5hCB7-hwg",
+        authDomain: "egida-os.firebaseapp.com",
+        projectId: "egida-os",
+        storageBucket: "egida-os.firebasestorage.app",
+        messagingSenderId: "263654193064",
+        appId: "1:263654193064:web:70adeef7eefbd944364f9d"
+    };
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const [svg, setSvg] = useState("");
-            useEffect(() => {
-                const render = () => {
-                    if (window.lucide && window.lucide.icons[name]) {
-                        setSvg(window.lucide.icons[name].toSvg({
-                            width: size,
-                            height: size,
-                            class: className,
-                            'stroke-width': 2
-                        }));
-                    }
-                };
-                render();
-                const t = setTimeout(render, 500);
-                return () => clearTimeout(t);
-            }, [name, size, className]);
-            return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center shrink-0" />;
-        };
-
-        const TOWARZYSTWA = ["PZU S.A.", "WARTA S.A.", "ERGO HESTIA S.A.", "GENERALI TU S.A.", "LINK4 TU S.A.", "UNIQA TU S.A.", "PKO Ubezpieczenia"];
-        const formatTitleCase = (t) => t ? t.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, m => m.toUpperCase()) : '';
-
-        const LoginScreen = ({ onLogin, error }) => {
-            const [email, setEmail] = useState('');
-            const [pass, setPass] = useState('');
-            const [loading, setLoading] = useState(false);
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                // Przekazujemy wyczyszczony ze spacji adres e-mail
-                await onLogin(email.trim(), pass);
-                setLoading(false);
-            };
-
-            return (
-                <div className="h-screen flex items-center justify-center p-4 fade-in">
-                    <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-50 space-y-6">
-                        <div className="text-center space-y-2">
-                            <div className="w-16 h-16 bg-[#0067b1] rounded-2xl mx-auto flex items-center justify-center text-white shadow-xl">
-                                <Icon name="Shield" size={32} />
-                            </div>
-                            <h1 className="text-2xl font-black text-slate-900 uppercase">Egida OS</h1>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panel Agenta Pallada</p>
-                        </div>
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <input type="email" placeholder="Email" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
-                            <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={pass} onChange={e => setPass(e.target.value)} required />
-                            {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase break-words">{error}</p>}
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all">
-                                {loading ? "Łączenie..." : "Zaloguj do Egidy"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [init, setInit] = useState(false);
-            const [module, setModule] = useState('dashboard');
-            const [records, setRecords] = useState([]);
-            const [loginError, setLoginError] = useState('');
-            const [form, setForm] = useState({ nrRejestracyjny: '', imieNazwisko: '', marka: '', model: '', ubezpieczyciel: '' });
-
-            useEffect(() => {
-                return auth.onAuthStateChanged(u => {
-                    setUser(u);
-                    setInit(true);
-                });
-            }, []);
-
-            useEffect(() => {
-                if (!user) return;
-                return db.collection("pojazdy").onSnapshot(snap => {
-                    const data = [];
-                    snap.forEach(d => data.push({ id: d.id, ...d.data() }));
-                    setRecords(data);
-                });
-            }, [user]);
-
-            const handleLogin = async (e, p) => {
-                setLoginError('');
-                try {
-                    await auth.signInWithEmailAndPassword(e, p);
-                } catch (err) {
-                    console.error("Szczegóły błędu Firebase:", err);
-                    // Wyświetlenie DOKŁADNEGO kodu błędu na ekranie dla celów diagnostycznych
-                    setLoginError(`BŁĄD: ${err.code}`);
+    const Icon = ({ name, size = 20, className = "" }) => {
+        const [svg, setSvg] = useState("");
+        useEffect(() => {
+            const render = () => {
+                if (window.lucide && window.lucide.icons[name]) {
+                    setSvg(window.lucide.icons[name].toSvg({
+                        width: size,
+                        height: size,
+                        class: className,
+                        'stroke-width': 2
+                    }));
                 }
             };
+            render();
+            const t = setTimeout(render, 500);
+            return () => clearTimeout(t);
+        }, [name, size, className]);
+        return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center shrink-0" />;
+    };
 
-            const handleSave = async () => {
-                if (!form.nrRejestracyjny) return;
-                const id = form.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
-                await db.collection("pojazdy").doc(id).set({ ...form, updatedAt: new Date().toISOString() });
-                
-                const pdf = new window.jspdf.jsPDF();
-                pdf.setFontSize(22); pdf.setTextColor(0, 103, 177); pdf.text("WYPOWIEDZENIE OC", 20, 30);
-                pdf.setFontSize(12); pdf.setTextColor(0); pdf.text(`Klient: ${form.imieNazwisko}`, 20, 50);
-                pdf.text(`Nr Rej: ${form.nrRejestracyjny}`, 20, 60);
-                pdf.save(`wypowiedzenie_${id}.pdf`);
-                alert("Zapisano i pobrano PDF");
-            };
+    const TOWARZYSTWA = ["PZU S.A.", "WARTA S.A.", "ERGO HESTIA S.A.", "GENERALI TU S.A.", "LINK4 TU S.A.", "UNIQA TU S.A.", "PKO Ubezpieczenia"];
+    const formatTitleCase = (t) => t ? t.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, m => m.toUpperCase()) : '';
 
-            if (!init) return null;
-            if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
+    const LoginScreen = ({ onLogin, error }) => {
+        const [email, setEmail] = useState('');
+        const [pass, setPass] = useState('');
+        const [loading, setLoading] = useState(false);
 
-            return (
-                <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc] fade-in">
-                    <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-8 shrink-0">
-                        <div className="flex items-center gap-3 mb-10">
-                            <div className="p-2 bg-[#0067b1] rounded-xl text-white shadow-lg"><Icon name="Shield" /></div>
-                            <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
-                        </div>
-                        <nav className="flex-1 space-y-2">
-                            <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
-                            <button onClick={() => setModule('form')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'form' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="FileText" size={16}/> Generator</button>
-                        </nav>
-                        <button onClick={() => auth.signOut()} className="flex items-center gap-3 p-4 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={16}/> Wyloguj</button>
-                    </aside>
-
-                    <main className="flex-1 p-10 overflow-y-auto">
-                        {module === 'dashboard' ? (
-                            <div className="space-y-8">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Baza danych</p>
-                                        <p className="text-5xl font-black text-slate-800">{records.length}</p>
-                                    </div>
-                                    <button onClick={() => setModule('form')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
-                                        Generator PDF <Icon name="ChevronRight" />
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="max-w-2xl space-y-8">
-                                <h2 className="text-2xl font-black uppercase tracking-tighter">Generator Wypowiedzeń</h2>
-                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
-                                    <div className="space-y-4">
-                                        <input placeholder="Nr Rejestracyjny" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold uppercase outline-none focus:ring-4 focus:ring-blue-100" value={form.nrRejestracyjny} onChange={e => setForm({...form, nrRejestracyjny: e.target.value.toUpperCase()})} />
-                                        <input placeholder="Imię i Nazwisko / Firma" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={form.imieNazwisko} onChange={e => setForm({...form, imieNazwisko: formatTitleCase(e.target.value)})} />
-                                    </div>
-                                    <button onClick={handleSave} className="w-full py-6 bg-[#0067b1] text-white rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all">
-                                        <Icon name="Download" /> Generuj i Zapisz
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-                </div>
-            );
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            await onLogin(email.trim(), pass);
+            setLoading(false);
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        return (
+            <div className="h-screen flex items-center justify-center p-4 fade-in">
+                <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-50 space-y-6">
+                    <div className="text-center space-y-2">
+                        <div className="w-16 h-16 bg-[#0067b1] rounded-2xl mx-auto flex items-center justify-center text-white shadow-xl">
+                            <Icon name="Shield" size={32} />
+                        </div>
+                        <h1 className="text-2xl font-black text-slate-900 uppercase">Egida OS</h1>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panel Agenta Pallada</p>
+                    </div>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <input type="email" placeholder="Email" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
+                        <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={pass} onChange={e => setPass(e.target.value)} required />
+                        {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase break-words">{error}</p>}
+                        <button type="submit" disabled={loading} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all">
+                            {loading ? "Łączenie..." : "Zaloguj do Egidy"}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    };
+
+    const App = () => {
+        const [user, setUser] = useState(null);
+        const [init, setInit] = useState(false);
+        const [module, setModule] = useState('dashboard');
+        const [records, setRecords] = useState([]);
+        const [loginError, setLoginError] = useState('');
+        const [form, setForm] = useState({ nrRejestracyjny: '', imieNazwisko: '', marka: '', model: '', ubezpieczyciel: '' });
+
+        useEffect(() => {
+            return auth.onAuthStateChanged(u => {
+                setUser(u);
+                setInit(true);
+            });
+        }, []);
+
+        useEffect(() => {
+            if (!user) return;
+            return db.collection("pojazdy").onSnapshot(snap => {
+                const data = [];
+                snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+                setRecords(data);
+            });
+        }, [user]);
+
+        const handleLogin = async (e, p) => {
+            setLoginError('');
+            try {
+                await auth.signInWithEmailAndPassword(e, p);
+            } catch (err) {
+                console.error("Szczegóły błędu Firebase:", err);
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                    setLoginError('Nieprawidłowy adres e-mail lub hasło.');
+                } else if (err.code === 'auth/invalid-email') {
+                    setLoginError('Niepoprawny format adresu e-mail.');
+                } else {
+                    setLoginError(`BŁĄD: ${err.code}`);
+                }
+            }
+        };
+
+        const handleSave = async () => {
+            if (!form.nrRejestracyjny) return;
+            const id = form.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
+            await db.collection("pojazdy").doc(id).set({ ...form, updatedAt: new Date().toISOString() });
+            
+            const pdf = new window.jspdf.jsPDF();
+            pdf.setFontSize(22); pdf.setTextColor(0, 103, 177); pdf.text("WYPOWIEDZENIE OC", 20, 30);
+            pdf.setFontSize(12); pdf.setTextColor(0); pdf.text(`Klient: ${form.imieNazwisko}`, 20, 50);
+            pdf.text(`Nr Rej: ${form.nrRejestracyjny}`, 20, 60);
+            pdf.save(`wypowiedzenie_${id}.pdf`);
+            alert("Zapisano i pobrano PDF");
+        };
+
+        if (!init) return null;
+        if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
+
+        return (
+            <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc] fade-in">
+                <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-8 shrink-0">
+                    <div className="flex items-center gap-3 mb-10">
+                        <div className="p-2 bg-[#0067b1] rounded-xl text-white shadow-lg"><Icon name="Shield" /></div>
+                        <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
+                    </div>
+                    <nav className="flex-1 space-y-2">
+                        <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
+                        <button onClick={() => setModule('form')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'form' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="FileText" size={16}/> Generator</button>
+                    </nav>
+                    <button onClick={() => auth.signOut()} className="flex items-center gap-3 p-4 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={16}/> Wyloguj</button>
+                </aside>
+
+                <main className="flex-1 p-10 overflow-y-auto">
+                    {module === 'dashboard' ? (
+                        <div className="space-y-8">
+                            <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Baza danych</p>
+                                    <p className="text-5xl font-black text-slate-800">{records.length}</p>
+                                </div>
+                                <button onClick={() => setModule('form')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
+                                    Generator PDF <Icon name="ChevronRight" />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="max-w-2xl space-y-8">
+                            <h2 className="text-2xl font-black uppercase tracking-tighter">Generator Wypowiedzeń</h2>
+                            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+                                <div className="space-y-4">
+                                    <input placeholder="Nr Rejestracyjny" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold uppercase outline-none focus:ring-4 focus:ring-blue-100" value={form.nrRejestracyjny} onChange={e => setForm({...form, nrRejestracyjny: e.target.value.toUpperCase()})} />
+                                    <input placeholder="Imię i Nazwisko / Firma" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={form.imieNazwisko} onChange={e => setForm({...form, imieNazwisko: formatTitleCase(e.target.value)})} />
+                                </div>
+                                <button onClick={handleSave} className="w-full py-6 bg-[#0067b1] text-white rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all">
+                                    <Icon name="Download" /> Generuj i Zapisz
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </main>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+
+
 </body>
 </html>
-```
