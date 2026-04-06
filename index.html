@@ -1,236 +1,242 @@
 <!DOCTYPE html>
-
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Egida OS | Grupa Pallada Trans</title>
-
-<!-- 1. Biblioteki UI i Logiki -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-<!-- 2. Ikony i PDF -->
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<!-- 3. Firebase (Wersja COMPAT - gwarantuje brak błędów "import/require") -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
-    .fade-in { animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    #root:empty { background: #f8fafc; height: 100vh; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #0067b1; }
-    #root:empty::after { content: "INICJALIZACJA SYSTEMU..."; letter-spacing: 0.1em; }
-</style>
-
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egida OS | Grupa Pallada Trans</title>
+    
+    <!-- 1. Biblioteki UI i Logiki -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 2. Ikony i PDF -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- 3. Firebase (Wersja COMPAT - gwarantuje brak błędów "import/require") -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Styl dla stanu ładowania */
+        #root:empty { 
+            background: #f8fafc; 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 900; 
+            color: #0067b1;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        #root:empty::after { 
+            content: "URUCHAMIANIE EGIDA OS..."; 
+            letter-spacing: 0.2em; 
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
-<div id="root"></div>
+    <div id="root"></div>
 
-<script type="text/babel">
-    const { useState, useEffect } = React;
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-    // --- KONFIGURACJA FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyD8ioxiSN03mI_ppLRezGdj-b5hCB7-hwg",
-        authDomain: "egida-os.firebaseapp.com",
-        projectId: "egida-os",
-        storageBucket: "egida-os.firebasestorage.app",
-        messagingSenderId: "263654193064",
-        appId: "1:263654193064:web:70adeef7eefbd944364f9d"
-    };
-
-    // Inicjalizacja globalna (bez importów)
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    // Bezpieczny komponent ikon Lucide
-    const Icon = ({ name, size = 20, className = "" }) => {
-        const [svg, setSvg] = useState("");
-        useEffect(() => {
-            const updateIcon = () => {
-                if (window.lucide && window.lucide.icons[name]) {
-                    setSvg(window.lucide.icons[name].toSvg({
-                        width: size,
-                        height: size,
-                        class: className,
-                        'stroke-width': 2
-                    }));
-                }
-            };
-            updateIcon();
-            const t = setTimeout(updateIcon, 300);
-            return () => clearTimeout(t);
-        }, [name, size, className]);
-        return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center" />;
-    };
-
-    const TOWARZYSTWA = [
-        "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
-        "Compensa TU S.A", "Aviva S.A.", "ALLIANZ Polska S.A. TUiR", "BENEFIA TU S.A.",
-        "InterRisk TU S.A.", "LINK4 TU S.A.", "UNIQA TU S.A.", "PKO Ubezpieczenia"
-    ];
-
-    const formatTitleCase = (t) => t ? t.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, m => m.toUpperCase()) : '';
-    const formatToPLDate = (d) => d ? d.split('-').reverse().join('-') : '';
-    
-    const LoginScreen = ({ onLogin, error }) => {
-        const [email, setEmail] = useState('');
-        const [pass, setPass] = useState('');
-        const [loading, setLoading] = useState(false);
-
-        const handleEnter = (e) => {
-            if (e.key === 'Enter') onLogin(email, pass);
+        // --- KONFIGURACJA FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8ioxiSN03mI_ppLRezGdj-b5hCB7-hwg",
+            authDomain: "egida-os.firebaseapp.com",
+            projectId: "egida-os",
+            storageBucket: "egida-os.firebasestorage.app",
+            messagingSenderId: "263654193064",
+            appId: "1:263654193064:web:70adeef7eefbd944364f9d"
         };
 
-        return (
-            <div className="h-screen flex items-center justify-center p-4">
-                <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-50 space-y-6 fade-in text-left">
-                    <div className="text-center space-y-2">
-                        <div className="w-16 h-16 bg-[#0067b1] rounded-2xl mx-auto flex items-center justify-center text-white shadow-xl shadow-blue-100">
-                            <Icon name="Shield" size={32} />
+        // Inicjalizacja globalna
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Bezpieczny komponent ikon Lucide
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const [svg, setSvg] = useState("");
+            useEffect(() => {
+                const updateIcon = () => {
+                    if (window.lucide && window.lucide.icons[name]) {
+                        setSvg(window.lucide.icons[name].toSvg({
+                            width: size,
+                            height: size,
+                            class: className,
+                            'stroke-width': 2
+                        }));
+                    }
+                };
+                updateIcon();
+                const t = setTimeout(updateIcon, 500);
+                return () => clearTimeout(t);
+            }, [name, size, className]);
+            return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center" />;
+        };
+
+        const TOWARZYSTWA = [
+            "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
+            "Compensa TU S.A", "UNIQA TU S.A.", "LINK4 TU S.A.", "PKO Ubezpieczenia"
+        ];
+
+        const formatTitleCase = (t) => t ? t.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, m => m.toUpperCase()) : '';
+        
+        const LoginScreen = ({ onLogin, error }) => {
+            const [email, setEmail] = useState('');
+            const [pass, setPass] = useState('');
+            const [localLoading, setLocalLoading] = useState(false);
+
+            const handleLogin = async () => {
+                setLocalLoading(true);
+                await onLogin(email, pass);
+                setLocalLoading(false);
+            };
+
+            return (
+                <div className="h-screen flex items-center justify-center p-4 fade-in">
+                    <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-50 space-y-6 text-left">
+                        <div className="text-center space-y-2">
+                            <div className="w-16 h-16 bg-[#0067b1] rounded-2xl mx-auto flex items-center justify-center text-white shadow-xl">
+                                <Icon name="Shield" size={32} />
+                            </div>
+                            <h1 className="text-2xl font-black text-slate-900 uppercase">Egida OS</h1>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grupa Pallada Trans</p>
                         </div>
-                        <h1 className="text-2xl font-black text-slate-900 uppercase">Egida OS</h1>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grupa Pallada Trans</p>
-                    </div>
-                    <div className="space-y-4">
-                        <input type="email" placeholder="Email Agenta" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={email} onChange={e => setEmail(e.target.value)} />
-                        <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={handleEnter} />
-                        {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase">{error}</p>}
-                        <button onClick={() => onLogin(email, pass)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all">Zaloguj do systemu</button>
+                        <div className="space-y-4">
+                            <input type="email" placeholder="Email Agenta" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={email} onChange={e => setEmail(e.target.value)} />
+                            <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={pass} onChange={e => setPass(e.target.value)} />
+                            {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase">{error}</p>}
+                            <button onClick={handleLogin} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all">
+                                {localLoading ? "Logowanie..." : "Zaloguj do systemu"}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        );
-    };
+            );
+        };
 
-    const App = () => {
-        const [user, setUser] = useState(null);
-        const [loading, setLoading] = useState(true);
-        const [module, setModule] = useState('dashboard');
-        const [records, setRecords] = useState([]);
-        const [loginError, setLoginError] = useState('');
-        const [formData, setFormData] = useState({ 
-            imieNazwisko: '', ulica: '', kodPocztowy: '', miejscowosc: '', 
-            marka: '', model: '', nrRejestracyjny: '', ubezpieczyciel: '', 
-            numerPolisy: '', dataRozwiazania: '', dataPodpisania: '', 
-            miejscowoscWystawienia: '', art: '28' 
-        });
-
-        useEffect(() => {
-            return auth.onAuthStateChanged(u => { setUser(u); setLoading(false); });
-        }, []);
-
-        useEffect(() => {
-            if (!user) return;
-            return db.collection("pojazdy").onSnapshot(snap => {
-                const data = [];
-                snap.forEach(d => data.push({ id: d.id, ...d.data() }));
-                setRecords(data);
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [appLoading, setAppLoading] = useState(true);
+            const [module, setModule] = useState('dashboard');
+            const [records, setRecords] = useState([]);
+            const [loginError, setLoginError] = useState('');
+            const [formData, setFormData] = useState({ 
+                imieNazwisko: '', ulica: '', kodPocztowy: '', miejscowosc: '', 
+                marka: '', model: '', nrRejestracyjny: '', ubezpieczyciel: '', 
+                numerPolisy: '', dataRozwiazania: '', dataPodpisania: '', 
+                miejscowoscWystawienia: '', art: '28' 
             });
-        }, [user]);
 
-        const handleLogin = (e, p) => {
-            setLoginError('');
-            auth.signInWithEmailAndPassword(e, p).catch(() => setLoginError('Błędne dane logowania'));
-        };
+            useEffect(() => {
+                return auth.onAuthStateChanged(u => { 
+                    setUser(u); 
+                    setAppLoading(false); 
+                });
+            }, []);
 
-        const handleSave = async () => {
-            if (!formData.nrRejestracyjny) return;
-            const id = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
-            await db.collection("pojazdy").doc(id).set({ ...formData, updatedAt: new Date().toISOString() });
-            
-            const doc = new jspdf.jsPDF();
-            const blue = [0, 103, 177];
-            
-            doc.setFontSize(22); doc.setTextColor(...blue); doc.text("WYPOWIEDZENIE OC", 20, 30);
-            doc.setFontSize(10); doc.setTextColor(100); doc.text("WYGENEROWANO W SYSTEMIE EGIDA OS", 20, 38);
-            
-            doc.setFontSize(12); doc.setTextColor(0);
-            doc.text(`Klient: ${formData.imieNazwisko}`, 20, 60);
-            doc.text(`Adres: ${formData.ulica}, ${formData.kodPocztowy} ${formData.miejscowosc}`, 20, 68);
-            doc.text(`Pojazd: ${formData.marka} ${formData.model}`, 20, 80);
-            doc.text(`Nr Rej: ${formData.nrRejestracyjny}`, 20, 88);
-            doc.text(`Towarzystwo: ${formData.ubezpieczyciel}`, 20, 100);
-            doc.text(`Polisa: ${formData.numerPolisy}`, 20, 108);
-            
-            doc.save(`wypowiedzenie_${id}.pdf`);
-            alert("Dokument wygenerowany i zapisany w bazie.");
-        };
+            useEffect(() => {
+                if (!user) return;
+                return db.collection("pojazdy").onSnapshot(snap => {
+                    const data = [];
+                    snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+                    setRecords(data);
+                });
+            }, [user]);
 
-        if (loading) return <div id="root"></div>;
-        if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
+            const handleLogin = async (e, p) => {
+                setLoginError('');
+                try {
+                    await auth.signInWithEmailAndPassword(e, p);
+                } catch (err) {
+                    setLoginError('Błędne dane logowania');
+                }
+            };
 
-        return (
-            <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc]">
-                <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-8 shrink-0 text-left">
-                    <div className="flex items-center gap-3 mb-10 text-left">
-                        <div className="p-2 bg-[#0067b1] rounded-xl shadow-lg shadow-blue-100 text-white"><Icon name="Shield" /></div>
-                        <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
-                    </div>
-                    <nav className="flex-1 space-y-2 text-left">
-                        <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
-                        <button onClick={() => setModule('form')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'form' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="FileText" size={16}/> Nowy dokument</button>
-                    </nav>
-                    <button onClick={() => auth.signOut()} className="flex items-center gap-3 p-4 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={16}/> Wyloguj</button>
-                </aside>
+            const handleSave = async () => {
+                if (!formData.nrRejestracyjny) return;
+                const id = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
+                await db.collection("pojazdy").doc(id).set({ ...formData, updatedAt: new Date().toISOString() });
+                
+                const doc = new jspdf.jsPDF();
+                doc.setFontSize(22); doc.setTextColor(0, 103, 177); doc.text("WYPOWIEDZENIE OC", 20, 30);
+                doc.setFontSize(12); doc.setTextColor(0); doc.text(`Klient: ${formData.imieNazwisko}`, 20, 50);
+                doc.text(`Nr Rej: ${formData.nrRejestracyjny}`, 20, 60);
+                doc.save(`wypowiedzenie_${id}.pdf`);
+                alert("Zapisano i pobrano PDF");
+            };
 
-                <main className="flex-1 p-10 overflow-y-auto text-left">
-                    {module === 'dashboard' ? (
-                        <div className="space-y-8 fade-in text-left">
-                            <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
-                            <div className="grid grid-cols-2 gap-6 text-left">
-                                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-left">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Baza klientów</p>
-                                    <p className="text-5xl font-black text-slate-800">{records.length}</p>
-                                </div>
-                                <button onClick={() => setModule('form')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all">
-                                    Generator PDF <Icon name="ChevronRight" />
-                                </button>
-                            </div>
+            // Zamiast zwracać div #root (co psuło Reacta), zwracamy loader lub null
+            if (appLoading) return null;
+            if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
+
+            return (
+                <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc] fade-in">
+                    <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-8 shrink-0">
+                        <div className="flex items-center gap-3 mb-10">
+                            <div className="p-2 bg-[#0067b1] rounded-xl text-white shadow-lg"><Icon name="Shield" /></div>
+                            <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
                         </div>
-                    ) : (
-                        <div className="max-w-2xl space-y-8 fade-in text-left">
-                            <h2 className="text-2xl font-black uppercase tracking-tighter">Nowe Wypowiedzenie</h2>
-                            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6 text-left">
-                                <div className="grid grid-cols-1 gap-4 text-left">
-                                    <input placeholder="Nr Rejestracyjny" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold uppercase outline-none focus:ring-4 focus:ring-blue-50" value={formData.nrRejestracyjny} onChange={e => setFormData({...formData, nrRejestracyjny: e.target.value.toUpperCase()})} />
-                                    <input placeholder="Imię i Nazwisko / Firma" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-50" value={formData.imieNazwisko} onChange={e => setFormData({...formData, imieNazwisko: formatTitleCase(e.target.value)})} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input placeholder="Marka" className="p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={formData.marka} onChange={e => setFormData({...formData, marka: e.target.value})} />
-                                        <input placeholder="Model" className="p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+                        <nav className="flex-1 space-y-2">
+                            <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
+                            <button onClick={() => setModule('form')} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'form' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="FileText" size={16}/> Nowy PDF</button>
+                        </nav>
+                        <button onClick={() => auth.signOut()} className="flex items-center gap-3 p-4 text-red-500 font-black text-[10px] uppercase hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={16}/> Wyloguj</button>
+                    </aside>
+
+                    <main className="flex-1 p-10 overflow-y-auto">
+                        {module === 'dashboard' ? (
+                            <div className="space-y-8">
+                                <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Baza klientów</p>
+                                        <p className="text-5xl font-black text-slate-800">{records.length}</p>
                                     </div>
-                                    <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={formData.ubezpieczyciel} onChange={e => setFormData({...formData, ubezpieczyciel: e.target.value})}>
-                                        <option value="">Wybierz towarzystwo...</option>
-                                        {TOWARZYSTWA.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
+                                    <button onClick={() => setModule('form')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
+                                        Generator PDF <Icon name="ChevronRight" />
+                                    </button>
                                 </div>
-                                <button onClick={handleSave} className="w-full py-6 bg-[#0067b1] text-white rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-blue-100 active:scale-95 transition-all">
-                                    <Icon name="Download" /> Pobierz i Zapisz
-                                </button>
                             </div>
-                        </div>
-                    )}
-                </main>
-            </div>
-        );
-    };
+                        ) : (
+                            <div className="max-w-2xl space-y-8">
+                                <h2 className="text-2xl font-black uppercase tracking-tighter">Nowe Wypowiedzenie</h2>
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+                                    <input placeholder="Nr Rejestracyjny" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold uppercase outline-none focus:ring-4 focus:ring-blue-100" value={formData.nrRejestracyjny} onChange={e => setFormData({...formData, nrRejestracyjny: e.target.value.toUpperCase()})} />
+                                    <input placeholder="Imię i Nazwisko / Firma" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={formData.imieNazwisko} onChange={e => setFormData({...formData, imieNazwisko: formatTitleCase(e.target.value)})} />
+                                    <button onClick={handleSave} className="w-full py-6 bg-[#0067b1] text-white rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all">
+                                        <Icon name="Download" /> Pobierz i Zapisz
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-</script>
-
-
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
