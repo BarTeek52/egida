@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- 3. Firebase SDK (Wersja COMPAT - bez importów) -->
+    <!-- 3. Firebase SDK (Wersja COMPAT) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -26,37 +26,45 @@
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* Ekran ładowania (widoczny dopóki React nie nadpisze #root) */
         #root:empty { 
             background: #f8fafc; 
             height: 100vh; 
             display: flex; 
+            flex-direction: column;
             align-items: center; 
             justify-content: center; 
             font-weight: 900; 
             color: #0067b1;
             font-size: 14px;
-            text-transform: uppercase;
         }
         #root:empty::after { 
-            content: "ŁADOWANIE EGIDA OS..."; 
+            content: "URUCHAMIANIE EGIDA OS..."; 
             letter-spacing: 0.3em;
             animation: blink 1.5s infinite;
         }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        /* Obsługa błędów krytycznych */
-        .error-boundary { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 20px; border-radius: 12px; margin: 20px; font-size: 14px; }
+        
+        .error-box { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; padding: 2rem; border-radius: 2rem; max-width: 500px; margin: 2rem auto; font-size: 12px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // Wyciągamy hooki z globalnego obiektu React
+        // Wyłapywanie błędów startowych
+        window.onerror = function(msg, url, line) {
+            document.getElementById('root').innerHTML = `
+                <div class="error-box">
+                    <h2 style="font-weight:900; text-transform:uppercase; margin-bottom:1rem">Błąd ładowania systemu</h2>
+                    <p>${msg}</p>
+                    <p style="margin-top:1rem; opacity:0.5">Linia: ${line}</p>
+                    <p style="margin-top:1rem">Odśwież stronę (Ctrl + F5). Jeśli błąd nadal występuje, skontaktuj się z administratorem.</p>
+                </div>
+            `;
+        };
+
         const { useState, useEffect } = React;
 
-        // --- KONFIGURACJA FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyD8ioxiSN03mI_ppLRezGdj-b5hCB7-hwg",
             authDomain: "egida-os.firebaseapp.com",
@@ -66,19 +74,11 @@
             appId: "1:263654193064:web:70adeef7eefbd944364f9d"
         };
 
-        // Bezpieczna inicjalizacja (tylko raz)
-        let auth, db;
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            auth = firebase.auth();
-            db = firebase.firestore();
-        } catch (e) {
-            console.error("Błąd Firebase:", e);
-        }
+        // Inicjalizacja usług
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        // Komponent ikony Lucide (metoda globalna)
         const Icon = ({ name, size = 20, className = "" }) => {
             const [svg, setSvg] = useState("");
             useEffect(() => {
@@ -93,17 +93,15 @@
                     }
                 };
                 render();
-                const t = setTimeout(render, 500); // Ponowna próba po pół sekundy
+                const t = setTimeout(render, 500);
                 return () => clearTimeout(t);
             }, [name, size, className]);
             return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center shrink-0" />;
         };
 
         const TOWARZYSTWA = ["PZU S.A.", "WARTA S.A.", "ERGO HESTIA S.A.", "GENERALI TU S.A.", "LINK4 TU S.A.", "UNIQA TU S.A.", "PKO Ubezpieczenia"];
-
         const formatTitleCase = (t) => t ? t.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, m => m.toUpperCase()) : '';
 
-        // EKRAN LOGOWANIA
         const LoginScreen = ({ onLogin, error }) => {
             const [email, setEmail] = useState('');
             const [pass, setPass] = useState('');
@@ -127,11 +125,11 @@
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panel Agenta Pallada</p>
                         </div>
                         <form onSubmit={handleLogin} className="space-y-4">
-                            <input type="email" placeholder="Email Agenta" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100 transition-all" value={email} onChange={e => setEmail(e.target.value)} required />
-                            <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100 transition-all" value={pass} onChange={e => setPass(e.target.value)} required />
+                            <input type="email" placeholder="Email" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
+                            <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" value={pass} onChange={e => setPass(e.target.value)} required />
                             {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase">{error}</p>}
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2">
-                                {loading ? "Proszę czekać..." : "Zaloguj do Egidy"}
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all">
+                                {loading ? "Łączenie..." : "Zaloguj do Egidy"}
                             </button>
                         </form>
                     </div>
@@ -139,7 +137,6 @@
             );
         };
 
-        // GŁÓWNY KOMPONENT
         const App = () => {
             const [user, setUser] = useState(null);
             const [init, setInit] = useState(false);
@@ -149,21 +146,19 @@
             const [form, setForm] = useState({ nrRejestracyjny: '', imieNazwisko: '', marka: '', model: '', ubezpieczyciel: '' });
 
             useEffect(() => {
-                const unsub = auth.onAuthStateChanged(u => {
+                return auth.onAuthStateChanged(u => {
                     setUser(u);
                     setInit(true);
                 });
-                return unsub;
             }, []);
 
             useEffect(() => {
                 if (!user) return;
-                const unsub = db.collection("pojazdy").onSnapshot(snap => {
+                return db.collection("pojazdy").onSnapshot(snap => {
                     const data = [];
                     snap.forEach(d => data.push({ id: d.id, ...d.data() }));
                     setRecords(data);
                 });
-                return unsub;
             }, [user]);
 
             const handleLogin = async (e, p) => {
@@ -182,13 +177,13 @@
                 
                 const pdf = new jspdf.jsPDF();
                 pdf.setFontSize(22); pdf.setTextColor(0, 103, 177); pdf.text("WYPOWIEDZENIE OC", 20, 30);
-                pdf.setFontSize(12); pdf.setTextColor(0); pdf.text(`Klient: ${form.imieNazwisko}`, 20, 50);
-                pdf.text(`Nr Rej: ${form.nrRejestracyjny}`, 20, 60);
+                doc.setFontSize(12); doc.setTextColor(0); doc.text(`Klient: ${form.imieNazwisko}`, 20, 50);
+                doc.text(`Nr Rej: ${form.nrRejestracyjny}`, 20, 60);
                 pdf.save(`wypowiedzenie_${id}.pdf`);
-                alert("Zapisano dane i pobrano PDF");
+                alert("Zapisano i pobrano PDF");
             };
 
-            if (!init) return null; // Czekamy na Firebase
+            if (!init) return null;
             if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
 
             return (
@@ -208,14 +203,14 @@
                     <main className="flex-1 p-10 overflow-y-auto">
                         {module === 'dashboard' ? (
                             <div className="space-y-8">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter">Witaj Agencie</h2>
+                                <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
                                 <div className="grid grid-cols-2 gap-6">
-                                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-left">
+                                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Baza danych</p>
                                         <p className="text-5xl font-black text-slate-800">{records.length}</p>
                                     </div>
                                     <button onClick={() => setModule('form')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
-                                        Nowe PDF <Icon name="ChevronRight" />
+                                        Generator PDF <Icon name="ChevronRight" />
                                     </button>
                                 </div>
                             </div>
@@ -238,7 +233,6 @@
             );
         };
 
-        // Renderowanie aplikacji do div #root
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
