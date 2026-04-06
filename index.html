@@ -6,33 +6,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Egida OS | Grupa Pallada Trans</title>
 
-<!-- Biblioteki zewnętrzne -->
+<!-- 1. Biblioteki UI i Logiki -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- 2. Ikony i PDF -->
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- Firebase SDK (Wersja Compat - gwarantuje brak błędów typu "require") -->
+<!-- 3. Firebase (Wersja COMPAT - najstabilniejsza dla HTML) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    body { 
-        font-family: 'Inter', sans-serif; 
-        margin: 0;
-        padding: 0;
-        background-color: #f8fafc;
-        color: #1e293b;
-    }
-    .fade-in { animation: fadeIn 0.4s ease-out; }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #root:empty { background: #f8fafc; height: 100vh; }
 </style>
 
 
@@ -43,7 +37,7 @@
 <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // --- KONFIGURACJA FIREBASE ---
+    // --- KONFIGURACJA FIREBASE (Twoje klucze) ---
     const firebaseConfig = {
         apiKey: "AIzaSyD8ioxiSN03mI_ppLRezGdj-b5hCB7-hwg",
         authDomain: "egida-os.firebaseapp.com",
@@ -53,88 +47,57 @@
         appId: "1:263654193064:web:70adeef7eefbd944364f9d"
     };
 
-    // Inicjalizacja Firebase w stabilnym trybie Compat
+    // Inicjalizacja usług (Tryb Globalny)
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Komponent ikony Lucide - Naprawiony dla stabilności
+    // Bezpieczny komponent ikon Lucide
     const Icon = ({ name, size = 20, className = "" }) => {
         const [svg, setSvg] = useState("");
         useEffect(() => {
-            if (window.lucide && window.lucide.icons[name]) {
-                setSvg(window.lucide.icons[name].toSvg({
-                    width: size,
-                    height: size,
-                    class: className
-                }));
-            }
+            const updateIcon = () => {
+                if (window.lucide && window.lucide.icons[name]) {
+                    setSvg(window.lucide.icons[name].toSvg({
+                        width: size,
+                        height: size,
+                        class: className,
+                        'stroke-width': 2
+                    }));
+                }
+            };
+            updateIcon();
+            const t = setTimeout(updateIcon, 200);
+            return () => clearTimeout(t);
         }, [name, size, className]);
-        return <span dangerouslySetInnerHTML={{ __html: svg }} />;
+        return <span dangerouslySetInnerHTML={{ __html: svg }} className="inline-flex items-center justify-center" />;
     };
 
-    const TOWARZYSTWA = [
-        "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
-        "Compensa TU S.A", "Aviva S.A.", "ALLIANZ Polska S.A. TUiR", "BENEFIA TU S.A.",
-        "InterRisk TU S.A.", "LINK4 TU S.A.", "Proama (Generali TU S.A.)", "TUW TUW",
-        "TUZ TUW", "UNIQA TU S.A.", "MTU ( STU ERGO HESTIA S.A.)",
-        "Pocztowe Towarzystwo Ubezpieczeń Wzajemnych", "Balcia Insurance SE",
-        "Wiener TU S.A.", "Accredited Insurance", "INSURANCE COMPANY EUROINS AD",
-        "ZAVAROVALNICA TRIGLAV D.D. (Trasti)", "WEFOX INSURANCE AG ODDZIAŁ W POLSCE",
-        "PKO Towarzystwo Ubezpieczeń S.A."
-    ];
+    const TOWARZYSTWA = ["PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.", "Compensa TU S.A", "UNIQA TU S.A.", "LINK4 TU S.A.", "WARTA S.A."];
 
-    const formatTitleCase = (text) => text ? text.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, (match) => match.toUpperCase()) : '';
-    const formatToPLDate = (dateStr) => {
-        if (!dateStr) return '';
-        const parts = dateStr.split('-');
-        return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
-    };
-
-    const LoginScreen = ({ onLogin }) => {
+    const formatTitleCase = (t) => t ? t.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, m => m.toUpperCase()) : '';
+    
+    const LoginScreen = ({ onLogin, error }) => {
         const [email, setEmail] = useState('');
-        const [password, setPassword] = useState('');
-        const [loading, setLoading] = useState(false);
-        const [error, setError] = useState('');
-
-        const handleSubmit = async (e) => {
-            e.preventDefault();
-            setLoading(true);
-            setError('');
-            try {
-                await onLogin(email, password);
-            } catch (err) {
-                setError("Błąd logowania. Sprawdź e-mail i hasło.");
-                setLoading(false);
-            }
-        };
-
+        const [pass, setPass] = useState('');
         return (
-            <div className="h-screen flex items-center justify-center bg-[#f8fafc] p-4 text-left">
-                <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-50 space-y-8 fade-in">
-                    <div className="text-center space-y-4">
-                        <div className="w-20 h-20 bg-[#0067b1] rounded-3xl mx-auto flex items-center justify-center shadow-xl shadow-blue-100">
-                            <Icon name="Shield" size={40} className="text-white" />
+            <div className="h-screen flex items-center justify-center p-4">
+                <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-50 space-y-6 fade-in text-left">
+                    <div className="text-center space-y-2">
+                        <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center text-white shadow-xl shadow-blue-100">
+                            <Icon name="Shield" size={32} />
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Egida OS</h1>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center tracking-[0.2em]">Grupa Pallada Trans</p>
+                        <h1 className="text-2xl font-black text-slate-900 uppercase">Egida OS</h1>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grupa Pallada Trans</p>
                     </div>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="text-left space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Email Agenta</label>
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-800 focus:ring-4 focus:ring-blue-50 transition-all" placeholder="agent@pallada.pl" required />
-                        </div>
-                        <div className="text-left space-y-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Hasło</label>
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-slate-800 focus:ring-4 focus:ring-blue-50 transition-all" placeholder="••••••••" required />
-                        </div>
-                        {error && <p className="text-red-500 text-[10px] font-black uppercase text-center">{error}</p>}
-                        <button type="submit" disabled={loading} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl">
-                            {loading ? "Autoryzacja..." : "Zaloguj"}
-                        </button>
-                    </form>
+                    <div className="space-y-4">
+                        <input type="email" placeholder="Email Agenta" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={email} onChange={e => setEmail(e.target.value)} />
+                        <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-100" value={pass} onChange={e => setPass(e.target.value)} />
+                        {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase">{error}</p>}
+                        <button onClick={() => onLogin(email, pass)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all">Zaloguj</button>
+                    </div>
                 </div>
             </div>
         );
@@ -143,232 +106,88 @@
     const App = () => {
         const [user, setUser] = useState(null);
         const [loading, setLoading] = useState(true);
-        const [currentModule, setCurrentModule] = useState('dashboard');
-        const [dbRecords, setDbRecords] = useState([]);
-        const [searchPlate, setSearchPlate] = useState('');
-        const [actionStatus, setActionStatus] = useState(null);
-        const [errors, setErrors] = useState([]);
-
-        const initialFormData = {
-            imieNazwisko: '', ulica: '', kodPocztowy: '', miejscowosc: '',
-            ubezpieczyciel: '', numerPolisy: '', dataRozwiazania: '', dataPodpisania: '',
-            miejscowoscWystawienia: '', marka: '', model: '', nrRejestracyjny: '', art: '28'
-        };
-        const [formData, setFormData] = useState(initialFormData);
+        const [module, setModule] = useState('dashboard');
+        const [records, setRecords] = useState([]);
+        const [loginError, setLoginError] = useState('');
+        const [formData, setFormData] = useState({ imieNazwisko: '', ulica: '', kodPocztowy: '', miejscowosc: '', marka: '', model: '', nrRejestracyjny: '', ubezpieczyciel: '', numerPolisy: '', dataRozwiazania: '', dataPodpisania: '', miejscowoscWystawienia: '', art: '28' });
 
         useEffect(() => {
-            const unsubAuth = auth.onAuthStateChanged((u) => { setUser(u); setLoading(false); });
-            return () => unsubAuth();
+            const unsub = auth.onAuthStateChanged(u => { setUser(u); setLoading(false); });
+            return unsub;
         }, []);
 
         useEffect(() => {
             if (!user) return;
-            const unsub = db.collection("pojazdy").onSnapshot((snap) => {
-                const records = [];
-                snap.forEach(doc => records.push({ id: doc.id, ...doc.data() }));
-                setDbRecords(records);
+            const unsub = db.collection("pojazdy").onSnapshot(snap => {
+                const data = [];
+                snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+                setRecords(data);
             });
-            return () => unsub();
+            return unsub;
         }, [user]);
 
-        const handleSearch = () => {
-            const normalized = searchPlate.replace(/\s/g, '').toUpperCase();
-            const record = dbRecords.find(r => r.nrRejestracyjny?.replace(/\s/g, '').toUpperCase() === normalized);
-            if (record) {
-                setFormData(prev => ({ ...prev, ...record, nrRejestracyjny: record.nrRejestracyjny.toUpperCase() }));
-                setErrors([]);
-            } else { setFormData(prev => ({ ...prev, nrRejestracyjny: normalized })); }
+        const handleLogin = (e, p) => {
+            setLoginError('');
+            auth.signInWithEmailAndPassword(e, p).catch(() => setLoginError('Błąd logowania'));
         };
 
-        const handleGenerate = async () => {
-            const required = ['imieNazwisko', 'ulica', 'kodPocztowy', 'miejscowosc', 'nrRejestracyjny', 'marka', 'model', 'ubezpieczyciel', 'numerPolisy', 'dataRozwiazania', 'dataPodpisania', 'miejscowoscWystawienia'];
-            const newErrors = required.filter(f => !formData[f] || formData[f].toString().trim() === '');
-            if (newErrors.length > 0) { setErrors(newErrors); setActionStatus('validation_error'); setTimeout(() => setActionStatus(null), 3000); return; }
-
-            setActionStatus('saving');
-            try {
-                const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
-                await db.collection("pojazdy").doc(docId).set({ ...formData, updatedAt: new Date().toISOString() });
-                
-                const { jsPDF } = window.jspdf;
-                const docPdf = new jsPDF();
-                
-                const loadF = async (u, n, f, s) => { 
-                    const r = await fetch(u); 
-                    const b = await r.arrayBuffer(); 
-                    let bi = ''; 
-                    const bt = new Uint8Array(b); 
-                    for(let i=0; i<bt.byteLength; i++) bi += String.fromCharCode(bt[i]); 
-                    docPdf.addFileToVFS(n, window.btoa(bi)); 
-                    docPdf.addFont(n, f, s); 
-                };
-                await loadF('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-R.ttf', 'Kiro', 'normal');
-                await loadF('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-B.ttf', 'Kiro', 'bold');
-
-                const palladaBlue = [0, 103, 177];
-                
-                await new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = () => { docPdf.addImage(img, 'PNG', 20, 15, 25, 25); resolve(); };
-                    img.onerror = () => { 
-                        docPdf.setFont("helvetica", "bold"); docPdf.setFontSize(22); docPdf.setTextColor(...palladaBlue); docPdf.text("PALLADA TRANS", 20, 30); resolve(); 
-                    };
-                    img.src = './Logo- tarcza.png';
-                });
-
-                docPdf.setFont("Kiro", "bold"); docPdf.setFontSize(11); docPdf.setTextColor(0);
-                docPdf.text(formatTitleCase(formData.imieNazwisko), 190, 20, { align: 'right' }); 
-                docPdf.setFont("Kiro", "normal"); docPdf.setFontSize(10);
-                docPdf.text(`${formData.ulica}`, 190, 26, { align: 'right' });
-                docPdf.text(`${formData.kodPocztowy} ${formData.miejscowosc}`, 190, 32, { align: 'right' });
-
-                docPdf.setDrawColor(...palladaBlue); docPdf.setLineWidth(0.2); docPdf.line(20, 48, 190, 48);
-                docPdf.setFontSize(14); docPdf.setFont("Kiro", "bold"); docPdf.setTextColor(...palladaBlue);
-                docPdf.text("WYPOWIEDZENIE UMOWY OC POSIADACZA POJAZDU", 105, 75, { align: 'center' });
-
-                docPdf.setTextColor(0); docPdf.setFontSize(11); docPdf.setFont("Kiro", "normal");
-                const formattedDate = formatToPLDate(formData.dataRozwiazania);
-                const t1 = "Proszę o rozwiązanie z dniem ";
-                docPdf.text(t1, 20, 95); 
-                docPdf.setFont("Kiro", "bold"); docPdf.text(formattedDate, 20 + docPdf.getTextWidth(t1), 95);
-
-                const blockY = 110;
-                const drawD = (x, y, l, v) => { docPdf.setFontSize(8); docPdf.setTextColor(100); docPdf.text(l.toUpperCase(), x, y); docPdf.setFontSize(12); docPdf.setTextColor(0); docPdf.setFont("Kiro", "bold"); docPdf.text(v || "---", x, y + 7); };
-                drawD(20, blockY, "Nr polisy", formData.numerPolisy); drawD(75, blockY, "Pojazd", `${formData.marka} ${formData.model}`.toUpperCase()); drawD(140, blockY, "Nr rejestracyjny", formData.nrRejestracyjny.toUpperCase());
-
-                const signY = 240;
-                docPdf.setFontSize(10); docPdf.setFont("Kiro", "normal");
-                docPdf.text(`${formData.miejscowoscWystawienia}, dnia ${formatToPLDate(formData.dataPodpisania)}`, 20, signY + 15);
-                docPdf.line(130, signY + 10, 190, signY + 15);
-                docPdf.setFontSize(8); docPdf.text("CZYTELNY PODPIS KLIENTA", 160, signY + 20, { align: 'center' });
-
-                docPdf.save(`wypowiedzenie_${formData.nrRejestracyjny}.pdf`);
-                setActionStatus('success');
-                setTimeout(() => setActionStatus(null), 3000);
-            } catch (e) { setActionStatus('error'); }
+        const handleSave = async () => {
+            if (!formData.nrRejestracyjny) return;
+            const id = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
+            await db.collection("pojazdy").doc(id).set({ ...formData, updatedAt: new Date().toISOString() });
+            
+            const doc = new jspdf.jsPDF();
+            doc.setFontSize(20); doc.text("WYPOWIEDZENIE OC", 20, 30);
+            doc.setFontSize(12); doc.text(`Klient: ${formData.imieNazwisko}`, 20, 50);
+            doc.text(`Pojazd: ${formData.marka} ${formData.model}`, 20, 60);
+            doc.text(`Nr Rej: ${formData.nrRejestracyjny}`, 20, 70);
+            doc.text(`Towarzystwo: ${formData.ubezpieczyciel}`, 20, 80);
+            doc.save(`wypowiedzenie_${id}.pdf`);
+            alert("Zapisano i wygenerowano PDF");
         };
 
-        const inCl = (f) => `w-full p-3 rounded-xl border outline-none font-bold text-sm transition-all ${errors.includes(f) ? 'border-red-500 bg-red-50' : 'border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-100 text-left'}`;
-
-        if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Icon name="Loader2" className="animate-spin text-[#0067b1]" size={40} /></div>;
-        if (!user) return <LoginScreen onLogin={(e, p) => auth.signInWithEmailAndPassword(e, p)} />;
+        if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 text-blue-600 font-bold">Ładowanie systemu...</div>;
+        if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
 
         return (
-            <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc]">
-                <aside className="w-72 bg-white border-r border-slate-100 flex flex-col p-8 shrink-0 text-left">
-                    <div className="flex items-center gap-3 mb-12">
-                        <div className="p-2 bg-[#0067b1] rounded-xl shadow-lg shadow-blue-100"><Icon name="Shield" className="text-white" /></div>
-                        <span className="font-black text-2xl tracking-tighter uppercase" style={{color:'#0067b1'}}>EGIDA</span>
-                    </div>
+            <div className="flex h-screen overflow-hidden text-left">
+                <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-6 shrink-0">
+                    <div className="flex items-center gap-2 mb-10"><Icon name="Shield" className="text-blue-600" /><span className="font-black text-xl">EGIDA</span></div>
                     <nav className="flex-1 space-y-2">
-                        <button onClick={() => setCurrentModule('dashboard')} className={`w-full flex items-center gap-4 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${currentModule === 'dashboard' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="LayoutDashboard" size={18} /> Dashboard</button>
-                        <button onClick={() => setCurrentModule('wypowiedzenia')} className={`w-full flex items-center gap-4 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${currentModule === 'wypowiedzenia' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="FileText" size={18} /> Wypowiedzenia</button>
-                        <button onClick={() => setCurrentModule('baza')} className={`w-full flex items-center gap-4 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${currentModule === 'baza' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-400 hover:bg-slate-50'}`}><Icon name="Database" size={18} /> Baza Klientów</button>
+                        <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold text-xs uppercase ${module === 'dashboard' ? 'bg-slate-900 text-white' : 'text-slate-400'}`}><Icon name="LayoutDashboard" size={16}/> Panel</button>
+                        <button onClick={() => setModule('form')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold text-xs uppercase ${module === 'form' ? 'bg-slate-900 text-white' : 'text-slate-400'}`}><Icon name="FileText" size={16}/> Nowy PDF</button>
                     </nav>
-                    <button onClick={() => auth.signOut()} className="flex items-center gap-4 p-4 text-[10px] font-black uppercase text-red-500 hover:bg-red-50 rounded-2xl transition-all"><Icon name="LogOut" size={18} /> Wyloguj</button>
+                    <button onClick={() => auth.signOut()} className="flex items-center gap-3 p-3 text-red-500 font-bold text-xs uppercase"><Icon name="LogOut" size={16}/> Wyloguj</button>
                 </aside>
 
-                <main className="flex-1 overflow-y-auto p-12">
-                    {currentModule === 'dashboard' && (
-                        <div className="space-y-8 fade-in">
-                            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Panel Agenta</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-left">
-                                    <p className="text-[10px] font-black text-[#0067b1] uppercase mb-2">Baza danych</p>
-                                    <p className="text-4xl font-black text-slate-800">{dbRecords.length}</p>
-                                    <p className="text-sm font-bold text-slate-400">Rekordów w chmurze</p>
-                                </div>
-                                <button onClick={() => setCurrentModule('wypowiedzenia')} className="bg-[#0067b1] p-8 rounded-[2.5rem] text-white shadow-2xl shadow-blue-200 flex items-center justify-between group transition-all hover:bg-blue-700">
-                                    <div className="text-left"><p className="font-black text-xl uppercase">Generator PDF</p><p className="text-xs text-blue-100 font-bold uppercase tracking-widest">Nowe wypowiedzenie</p></div>
-                                    <Icon name="ChevronRight" size={30} className="group-hover:translate-x-2 transition-transform" />
-                                </button>
+                <main className="flex-1 p-10 overflow-y-auto">
+                    {module === 'dashboard' ? (
+                        <div className="space-y-6">
+                            <h2 className="text-2xl font-black uppercase">Dashboard</h2>
+                            <div className="grid grid-cols-2 gap-6 text-left">
+                                <div className="bg-white p-6 rounded-3xl border border-slate-100"><p className="text-[10px] font-bold text-slate-400 uppercase">Rekordy w bazie</p><p className="text-4xl font-black">{records.length}</p></div>
+                                <button onClick={() => setModule('form')} className="bg-blue-600 text-white p-6 rounded-3xl flex items-center justify-between font-black uppercase">Generator PDF <Icon name="ChevronRight" /></button>
                             </div>
                         </div>
-                    )}
-
-                    {currentModule === 'wypowiedzenia' && (
-                        <div className="max-w-4xl space-y-6 fade-in text-left">
-                            <header className="flex justify-between items-center mb-8">
-                                <h2 className="text-2xl font-black uppercase text-slate-800">Generator Wypowiedzeń</h2>
-                                <button onClick={() => setFormData(initialFormData)} className="text-[10px] font-black text-red-500 uppercase flex items-center gap-2"><Icon name="RotateCcw" size={14}/> Wyczyść</button>
-                            </header>
-                            <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-8">
-                                <div className="flex gap-4">
-                                    <input type="text" placeholder="Szukaj po nr rejestracyjnym..." className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold uppercase outline-none focus:ring-4 focus:ring-blue-50 text-slate-800" value={searchPlate} onChange={e => setSearchPlate(e.target.value.toUpperCase())} onKeyPress={e => e.key === 'Enter' && handleSearch()} />
-                                    <button onClick={handleSearch} className="bg-[#0067b1] text-white px-8 py-4 rounded-2xl font-black uppercase text-sm shadow-lg shadow-blue-100 transition-all hover:bg-blue-700">Szukaj</button>
+                    ) : (
+                        <div className="max-w-2xl space-y-6 text-left">
+                            <h2 className="text-2xl font-black uppercase">Generator PDF</h2>
+                            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
+                                <input placeholder="Nr Rejestracyjny" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold uppercase" value={formData.nrRejestracyjny} onChange={e => setFormData({...formData, nrRejestracyjny: e.target.value.toUpperCase()})} />
+                                <input placeholder="Imię i Nazwisko" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" value={formData.imieNazwisko} onChange={e => setFormData({...formData, imieNazwisko: formatTitleCase(e.target.value)})} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input placeholder="Marka" className="p-4 bg-slate-50 border rounded-2xl font-bold" value={formData.marka} onChange={e => setFormData({...formData, marka: e.target.value})} />
+                                    <input placeholder="Model" className="p-4 bg-slate-50 border rounded-2xl font-bold" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-4">
-                                        <h3 className="font-bold text-[#0067b1] uppercase text-[10px] border-b pb-2 tracking-widest">Wypowiadający</h3>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Imię i Nazwisko / Firma</label><input className={inCl('imieNazwisko')} value={formData.imieNazwisko} onChange={e => setFormData({...formData, imieNazwisko: formatTitleCase(e.target.value)})} placeholder="Jan Kowalski" /></div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Ulica i numer</label><input className={inCl('ulica')} value={formData.ulica} onChange={e => setFormData({...formData, ulica: formatTitleCase(e.target.value)})} placeholder="Polna 12" /></div>
-                                        <div className="flex gap-3 text-left">
-                                            <div className="w-1/3"><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Kod</label><input className={inCl('kodPocztowy')} value={formData.kodPocztowy} onChange={e => setFormData({...formData, kodPocztowy: e.target.value})} placeholder="00-000" /></div>
-                                            <div className="flex-1"><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Miejscowość</label><input className={inCl('miejscowosc')} value={formData.miejscowosc} onChange={e => setFormData({...formData, miejscowosc: formatTitleCase(e.target.value)})} placeholder="Szczecin" /></div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h3 className="font-bold text-[#0067b1] uppercase text-[10px] border-b pb-2 tracking-widest">Pojazd i Polisa</h3>
-                                        <div className="flex gap-3 text-left">
-                                            <div className="flex-1"><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Marka</label><input className={inCl('marka')} value={formData.marka} onChange={e => setFormData({...formData, marka: formatTitleCase(e.target.value)})} placeholder="Toyota" /></div>
-                                            <div className="flex-1"><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Model</label><input className={inCl('model')} value={formData.model} onChange={e => setFormData({...formData, model: formatTitleCase(e.target.value)})} placeholder="Auris" /></div>
-                                        </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Ubezpieczyciel</label><select className={inCl('ubezpieczyciel')} value={formData.ubezpieczyciel} onChange={e => setFormData({...formData, ubezpieczyciel: e.target.value})}><option value="">Wybierz...</option>{TOWARZYSTWA.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
-                                        <div className="flex gap-3 text-left">
-                                            <div className="flex-1 text-left text-left"><label className="text-[10px] font-black text-slate-400 uppercase ml-2 text-left text-left">Nr Polisy</label><input className={inCl('numerPolisy')} value={formData.numerPolisy} onChange={e => setFormData({...formData, numerPolisy: e.target.value})} placeholder="XYZ123" /></div>
-                                            <div className="flex-1 text-left text-left"><label className="text-[10px] font-black text-slate-400 uppercase ml-2 text-left text-left text-left">Data końca</label><input type="date" className={inCl('dataRozwiazania')} value={formData.dataRozwiazania} onChange={e => setFormData({...formData, dataRozwiazania: e.target.value})} /></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <h3 className="font-bold text-[#0067b1] uppercase text-[10px] border-b pb-2 tracking-widest">Data i Podpis</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Miejsce wystawienia</label><input className={inCl('miejscowoscWystawienia')} value={formData.miejscowoscWystawienia} onChange={e => setFormData({...formData, miejscowoscWystawienia: formatTitleCase(e.target.value)})} placeholder="Szczecin" /></div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Data podpisania</label><input type="date" className={inCl('dataPodpisania')} value={formData.dataPodpisania} onChange={e => setFormData({...formData, dataPodpisania: e.target.value})} /></div>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {[
-                                        {id: '28', n: 'Zwykłe (Art. 28)'}, 
-                                        {id: '28a', n: 'Podwójne (Art. 28a)'}, 
-                                        {id: '31', n: 'Nabywca (Art. 31)'}
-                                    ].map(a => (
-                                        <button key={a.id} onClick={() => setFormData({...formData, art: a.id})} className={`p-4 rounded-2xl border flex items-center gap-3 transition-all ${formData.art === a.id ? 'bg-blue-50 border-blue-600 text-[#0067b1] shadow-sm' : 'bg-white border-slate-100 text-slate-400'}`}>
-                                            <Icon name={formData.art === a.id ? 'CheckSquare' : 'Square'} />
-                                            <div className="text-left leading-tight"><span className="block font-black text-[10px] uppercase">{a.n}</span></div>
-                                        </button>
-                                    ))}
-                                </div>
-                                <button onClick={handleGenerate} className="w-full py-6 bg-[#0067b1] text-white rounded-[2.5rem] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
-                                    {actionStatus === 'saving' ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Download" />} 
-                                    {actionStatus === 'saving' ? "Generowanie..." : "Pobierz PDF i Zapisz"}
-                                </button>
-                            </section>
-                        </div>
-                    )}
-
-                    {currentModule === 'baza' && (
-                        <div className="space-y-6 fade-in text-left">
-                            <h2 className="text-2xl font-black text-slate-900 uppercase">Baza Klientów</h2>
-                            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                                <table className="w-full">
-                                    <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase text-left"><tr><th className="p-6">Klient / Miasto</th><th className="p-6">Pojazd / Rejestracja</th><th className="p-6 text-right">Akcje</th></tr></thead>
-                                    <tbody>
-                                        {dbRecords.map(r => (
-                                            <tr key={r.id} className="border-t border-slate-50 hover:bg-slate-50 transition-colors">
-                                                <td className="p-6"><p className="font-black text-slate-800 text-sm uppercase">{r.imieNazwisko}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{r.miejscowosc}</p></td>
-                                                <td className="p-6"><p className="font-black text-[#0067b1] text-sm uppercase">{r.nrRejestracyjny}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{r.marka}</p></td>
-                                                <td className="p-6 text-right"><div className="flex justify-end gap-2"><button onClick={() => { setFormData(r); setCurrentModule('wypowiedzenia'); }} className="p-2 text-slate-300 hover:text-blue-600 transition-colors"><Icon name="FileText" /></button><button onClick={async () => { if(confirm("Usunąć rekord?")) await db.collection("pojazdy").doc(r.id).delete() }} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Icon name="Trash2" /></button></div></td>
-                                            </tr>
-                                        ))}
-                                        {dbRecords.length === 0 && <tr><td colSpan="3" className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Baza jest pusta</td></tr>}
-                                    </tbody>
-                                </table>
+                                <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" value={formData.ubezpieczyciel} onChange={e => setFormData({...formData, ubezpieczyciel: e.target.value})}>
+                                    <option value="">Wybierz towarzystwo...</option>
+                                    {TOWARZYSTWA.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                                <button onClick={handleSave} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2">Pobierz i Zapisz</button>
                             </div>
                         </div>
                     )}
                 </main>
-                {actionStatus === 'validation_error' && ( <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-red-600 text-white px-10 py-5 rounded-3xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom-10 z-[100]"><Icon name="AlertCircle" /><span className="font-black text-xs uppercase tracking-widest">Uzupełnij wymagane pola!</span></div> )}
             </div>
         );
     };
