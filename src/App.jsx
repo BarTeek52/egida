@@ -4,8 +4,8 @@ import {
   getAuth, 
   onAuthStateChanged, 
   signInAnonymously, 
-  signInWithCustomToken,
-  signInWithEmailAndPassword,
+  signInWithCustomToken, 
+  signInWithEmailAndPassword, 
   signOut 
 } from 'firebase/auth';
 import { 
@@ -151,7 +151,7 @@ export default function App() {
   };
   const [formData, setFormData] = useState(initialFormData);
 
-  // Zmiana 1: Ustawienie tytułu karty przeglądarki
+  // Ustawienie tytułu karty przeglądarki na "Egida"
   useEffect(() => {
     document.title = "Egida";
   }, []);
@@ -456,19 +456,6 @@ export default function App() {
     }
   };
 
-  // Funkcja do dynamicznego wyciągania imienia
-  const getUserFirstName = () => {
-    if (!user) return "Użytkowniku";
-    if (user.displayName) return user.displayName.split(' ')[0];
-    const emailPrefix = user.email.split('@')[0];
-    const namePart = emailPrefix.split('.')[0]; // Obsługa b.zochowski -> b
-    // Jeśli prefix to litera (np. B.), spróbujmy wziąć drugą część lub po prostu sformatować
-    if (namePart.length === 1 && emailPrefix.split('.').length > 1) {
-        return formatTitleCase(emailPrefix.split('.')[1]);
-    }
-    return formatTitleCase(namePart);
-  };
-
   const renderContent = () => {
     if (activeTab === 'dashboard') {
       return (
@@ -476,9 +463,9 @@ export default function App() {
           <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
               <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida</p>
-              {/* Zmiana 2: Nowy format powitania */}
+              {/* Usunięto personalizowane powitanie zgodnie z prośbą */}
               <h1 className="text-4xl font-black text-slate-900" style={styles.header}>
-                Cześć, {getUserFirstName()}
+                Pulpit Agenta
               </h1>
             </div>
             <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
