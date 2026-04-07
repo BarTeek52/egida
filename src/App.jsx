@@ -69,6 +69,7 @@ const TOWARZYSTWA = [
     "PKO Towarzystwo Ubezpieczeń S.A."
 ];
 
+// Oficjalne czcionki Pallada
 const styles = {
   header: { fontFamily: "'Semplicita Pro', sans-serif" },
   body: { fontFamily: "'Kiro', sans-serif" }
@@ -113,12 +114,12 @@ const LoginScreen = ({ onLogin, error }) => {
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-4">Adres E-mail</label>
-                      <input type="email" placeholder="email@pallada.pl" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all" value={email} onChange={e => setEmail(e.target.value)} required />
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-4">Adres E-mail</label>
+                      <input type="email" placeholder="email@pallada.pl" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all placeholder:text-slate-300" value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-4">Hasło dostępu</label>
-                      <input type="password" placeholder="••••••••" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all" value={pass} onChange={e => setPass(e.target.value)} required />
+                      <label className="text-[10px] font-bold text-slate-500 uppercase ml-4">Hasło dostępu</label>
+                      <input type="password" placeholder="••••••••" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all placeholder:text-slate-300" value={pass} onChange={e => setPass(e.target.value)} required />
                     </div>
                     {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase tracking-widest bg-red-50 p-3 rounded-xl">{error}</p>}
                     <button type="submit" disabled={loading} className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-black shadow-xl active:scale-[0.98] transition-all">
@@ -228,10 +229,11 @@ export default function App() {
   const getInputClass = (fieldName, type = 'text') => {
     const isError = errors.includes(fieldName);
     const isEmpty = !formData[fieldName];
-    let base = "w-full p-4 rounded-2xl border outline-none transition-all placeholder:text-slate-450 placeholder:font-normal font-medium";
+    // Zaktualizowany kolor placeholderów (slate-300) dla kontrastu z etykietami
+    let base = "w-full p-4 rounded-2xl border outline-none transition-all placeholder:text-slate-300 placeholder:font-normal font-medium";
     
     if ((type === 'select' || type === 'date') && isEmpty) {
-        base += " text-slate-400";
+        base += " text-slate-300";
     } else {
         base += " text-slate-900";
     }
@@ -259,8 +261,6 @@ export default function App() {
         setActionStatus('saving');
         const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
 
-        // --- KLUCZOWA LOGIKA SEPARACJI DANYCH ---
-        // Wykluczamy dane unikatowe (polisę i daty konkretnego wypowiedzenia) z zapisu bazy "pojazdy"
         const { 
             numerPolisy, 
             dataRozwiazania, 
@@ -276,7 +276,6 @@ export default function App() {
             teamId: 'pallada_main'
         });
 
-        // --- GENEROWANIE PDF ---
         if (!window.jspdf) {
             await new Promise((resolve) => {
                 const script = document.createElement('script');
@@ -531,7 +530,7 @@ export default function App() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={20} />
                             <input 
                               type="text" 
-                              className="w-full pl-12 pr-4 py-5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-blue-200 uppercase font-bold text-lg outline-none focus:bg-white/20" 
+                              className="w-full pl-12 pr-4 py-5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-blue-200 uppercase font-bold text-lg outline-none focus:bg-white/20 placeholder:font-normal" 
                               placeholder="WPISZ NUMER REJESTRACYJNY..." 
                               value={searchPlate} 
                               onChange={(e) => setSearchPlate(e.target.value.toUpperCase())} 
@@ -546,53 +545,55 @@ export default function App() {
                 </section>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* DANE WYPOWIADAJĄCEGO */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Users size={16} /> Dane Wypowiadającego
                         </h2>
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Imię i Nazwisko / Firma</label>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Imię i Nazwisko / Firma</label>
                                 <input name="imieNazwisko" placeholder="np. Jan Kowalski" className={getInputClass('imieNazwisko')} value={formData.imieNazwisko} onChange={handleInputChange} style={styles.body} />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Ulica i numer</label>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Ulica i numer</label>
                                 <input name="ulica" placeholder="np. Polna 12/3" className={getInputClass('ulica')} value={formData.ulica} onChange={handleInputChange} style={styles.body} />
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/3">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Kod</label>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Kod</label>
                                     <input name="kodPocztowy" placeholder="00-000" className={getInputClass('kodPocztowy')} value={formData.kodPocztowy} onChange={handleInputChange} maxLength={6} style={styles.body} />
                                 </div>
                                 <div className="flex-1">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Miejscowość</label>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Miejscowość</label>
                                     <input name="miejscowosc" placeholder="np. Szczecin" className={getInputClass('miejscowosc')} value={formData.miejscowosc} onChange={handleInputChange} style={styles.body} />
                                 </div>
                             </div>
                         </div>
                     </section>
 
+                    {/* POJAZD I POLISA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Shield size={16} /> Pojazd i Polisa
                         </h2>
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Nr rejestracyjny</label>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Nr rejestracyjny</label>
                                 <input name="nrRejestracyjny" placeholder="ABC 12345" className={getInputClass('nrRejestracyjny')} value={formData.nrRejestracyjny} onChange={handleInputChange} style={styles.body} />
                             </div>
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Marka</label>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Marka</label>
                                   <input name="marka" placeholder="np. Toyota" className={getInputClass('marka')} value={formData.marka} onChange={handleInputChange} style={styles.body} />
                                 </div>
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Model</label>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Model</label>
                                   <input name="model" placeholder="np. Corolla" className={getInputClass('model')} value={formData.model} onChange={handleInputChange} style={styles.body} />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Ubezpieczyciel</label>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Ubezpieczyciel</label>
                                 <select name="ubezpieczyciel" className={getInputClass('ubezpieczyciel', 'select')} value={formData.ubezpieczyciel} onChange={handleInputChange} style={styles.body}>
                                     <option value="">Wybierz z listy...</option>
                                     {TOWARZYSTWA.map(t => <option key={t} value={t}>{t}</option>)}
@@ -600,28 +601,29 @@ export default function App() {
                             </div>
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Nr polisy</label>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Nr polisy</label>
                                   <input name="numerPolisy" placeholder="Numer polisy" className={getInputClass('numerPolisy')} value={formData.numerPolisy} onChange={handleInputChange} style={styles.body} />
                                 </div>
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Data rozwiązania</label>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Data rozwiązania</label>
                                   <input name="dataRozwiazania" type="date" className={getInputClass('dataRozwiazania', 'date')} value={formData.dataRozwiazania} onChange={handleInputChange} style={styles.body} />
                                 </div>
                             </div>
                         </div>
                     </section>
 
+                    {/* MIEJSCE I DATA WYSTAWIENIA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 md:col-span-2 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Plus size={16} /> Miejsce i data wystawienia
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div>
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Data podpisania</label>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Data podpisania</label>
                               <input name="dataPodpisania" type="date" className={getInputClass('dataPodpisania', 'date')} value={formData.dataPodpisania} onChange={handleInputChange} style={styles.body} />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Miejscowość podpisania</label>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Miejscowość podpisania</label>
                               <input name="miejscowoscWystawienia" placeholder="np. Szczecin" className={getInputClass('miejscowoscWystawienia')} value={formData.miejscowoscWystawienia} onChange={handleInputChange} style={styles.body} />
                             </div>
                         </div>
@@ -635,7 +637,7 @@ export default function App() {
                                 </div>
                                 <div className="text-left leading-tight">
                                     <span className="block font-black text-slate-900 text-sm" style={styles.header}>{a === '28' ? 'Standardowe' : a === '28a' ? 'Po wznowieniu' : 'Nabywcy'}</span>
-                                    <span className="block font-bold text-[9px] uppercase text-slate-400 mt-1 tracking-widest">ART. {a} USTAWY</span>
+                                    <span className="block font-bold text-[9px] uppercase text-slate-500 mt-1 tracking-widest">ART. {a} USTAWY</span>
                                 </div>
                             </button>
                         ))}
