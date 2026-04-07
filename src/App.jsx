@@ -5,6 +5,7 @@ import {
   onAuthStateChanged, 
   signInAnonymously, 
   signInWithCustomToken,
+  signInWithEmailAndPassword,
   signOut 
 } from 'firebase/auth';
 import { 
@@ -88,8 +89,52 @@ const formatToPLDate = (dateStr) => {
     return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
 };
 
+// --- EKRAN LOGOWANIA ---
+const LoginScreen = ({ onLogin, error }) => {
+    const [email, setEmail] = useState('');
+    const [pass, setPass] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        await onLogin(email, pass);
+        setLoading(false);
+    };
+
+    return (
+        <div className="h-screen flex items-center justify-center p-4 bg-gray-50" style={styles.body}>
+            <div className="bg-white p-12 rounded-[3rem] shadow-2xl w-full max-w-md border border-slate-100 space-y-8 animate-in zoom-in-95 duration-500">
+                <div className="text-center space-y-3">
+                    <div className="w-20 h-20 bg-[#0067b1] rounded-[2rem] mx-auto flex items-center justify-center text-white shadow-xl">
+                        <Shield size={40} />
+                    </div>
+                    <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter" style={styles.header}>Egida</h1>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Panel Agenta Pallada</p>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-4">Adres E-mail</label>
+                      <input type="email" placeholder="email@pallada.pl" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all" value={email} onChange={e => setEmail(e.target.value)} required />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-4">Hasło dostępu</label>
+                      <input type="password" placeholder="••••••••" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all" value={pass} onChange={e => setPass(e.target.value)} required />
+                    </div>
+                    {error && <p className="text-red-500 text-[10px] font-bold text-center uppercase tracking-widest bg-red-50 p-3 rounded-xl">{error}</p>}
+                    <button type="submit" disabled={loading} className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-black shadow-xl active:scale-[0.98] transition-all">
+                        {loading ? "Łączenie..." : "Zaloguj do systemu"}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 export default function App() {
   const [user, setUser] = useState(null);
+  const [init, setInit] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [records, setRecords] = useState([]);
@@ -105,28 +150,42 @@ export default function App() {
   };
   const [formData, setFormData] = useState(initialFormData);
 
+  // Zaktualizowane opisy modułów
   const modules = [
     { id: 'dashboard', label: 'Pulpit', icon: LayoutDashboard, color: 'text-slate-600', bg: 'bg-slate-50', desc: 'Przegląd systemu' },
-    { id: 'wznowienia', label: 'Wznowienia', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-50', desc: 'Kontynuacje polis OC/AC' },
+    { id: 'wznowienia', label: 'Wznowienia', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-50', desc: 'Kontynuacje polis' },
     { id: 'wypowiedzenia', label: 'Wypowiedzenia', icon: FileText, color: 'text-rose-500', bg: 'bg-rose-50', desc: 'Generator dokumentów' },
     { id: 'oferty', label: 'Oferty', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', desc: 'Nowe propozycje' },
-    { id: 'porownania', label: 'Porównania', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50', desc: 'Zestawienia ofert' },
+    { id: 'porownania', label: 'Porównania', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50', desc: 'Zakresów ubezpieczenia' },
     { id: 'statystyki', label: 'Statystyki', icon: BarChart3, color: 'text-emerald-500', bg: 'bg-emerald-50', desc: 'Analiza wyników' },
     { id: 'baza', label: 'Baza Danych', icon: Database, color: 'text-cyan-500', bg: 'bg-cyan-50', desc: 'Zasoby klientów' },
   ];
 
   useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+        setUser(u);
+        setInit(true);
+    });
     return () => unsubscribe();
   }, []);
+
+  const handleLogin = async (email, pass) => {
+    setLoginError('');
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (err) {
+        setLoginError('Błędne dane logowania.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        setActiveTab('dashboard');
+    } catch (err) {
+        console.error("Logout error", err);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -168,15 +227,11 @@ export default function App() {
     setShowResetConfirm(false);
   };
 
-  // POPRAWIONE: Wyraźniejszy kolor placeholderów (slate-400 zamiast 300) i czcionka Kiro
   const getInputClass = (fieldName, type = 'text') => {
     const isError = errors.includes(fieldName);
     const isEmpty = !formData[fieldName];
     let base = "w-full p-4 rounded-2xl border outline-none transition-all placeholder:text-slate-450 placeholder:font-normal font-medium";
     
-    // Dodanie Kiro do pól
-    const fontStyle = { ...styles.body };
-
     if ((type === 'select' || type === 'date') && isEmpty) {
         base += " text-slate-400";
     } else {
@@ -260,12 +315,12 @@ export default function App() {
         <div className="p-6 md:p-12 space-y-12 animate-in fade-in duration-500" style={styles.body}>
           <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
-              <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida OS</p>
+              <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida</p>
               <h1 className="text-4xl font-black text-slate-900" style={styles.header}>Dzień dobry, Bartek</h1>
             </div>
             <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Aktywny: {user?.uid.slice(0,6)}</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Aktywny: {user?.email}</span>
             </div>
           </header>
 
@@ -405,10 +460,10 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* MIEJSCOWOŚĆ I DATA PODPISANIA */}
+                    {/* MIEJSCE I DATA WYSTAWIENIA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 md:col-span-2 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
-                          <Plus size={16} /> Finalizacja Dokumentu
+                          <Plus size={16} /> Miejsce i data wystawienia
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div>
@@ -462,6 +517,9 @@ export default function App() {
     );
   };
 
+  if (!init) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={48} /></div>;
+  if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
+
   return (
     <div className="flex h-screen bg-gray-50 text-slate-900" style={styles.body}>
       {/* SIDEBAR */}
@@ -507,7 +565,7 @@ export default function App() {
               </div>
             )}
           </div>
-          <button onClick={() => signOut(auth)} className={`w-full flex items-center gap-4 p-4 mt-4 text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 rounded-2xl transition-all ${!isSidebarOpen && 'justify-center'}`}>
+          <button onClick={handleLogout} className={`w-full flex items-center gap-4 p-4 mt-4 text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 rounded-2xl transition-all ${!isSidebarOpen && 'justify-center'}`}>
             <LogOut size={20} />
             {isSidebarOpen && <span>Wyloguj</span>}
           </button>
