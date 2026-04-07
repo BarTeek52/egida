@@ -515,7 +515,7 @@ export default function App() {
                     <div className="bg-rose-500 p-4 rounded-3xl shadow-xl shadow-rose-200"><FileText className="text-white" size={32} /></div>
                     <div>
                       <h1 className="text-3xl font-black text-slate-900 tracking-tight" style={styles.header}>Wypowiedzenia</h1>
-                      <p className="text-slate-400 font-medium text-sm">Generator dokumentów OC Pallada</p>
+                      <p className="text-slate-400 font-medium text-sm">Generator dokumentu</p>
                     </div>
                 </div>
                 <button onClick={() => setShowResetConfirm(true)} className="px-8 py-3 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold text-sm hover:bg-rose-50 transition-all shadow-sm">Wyczyść pola</button>
@@ -531,7 +531,7 @@ export default function App() {
                             <input 
                               type="text" 
                               className="w-full pl-12 pr-4 py-5 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-blue-200 uppercase font-bold text-lg outline-none focus:bg-white/20 placeholder:font-normal" 
-                              placeholder="WPISZ NUMER REJESTRACYJNY..." 
+                              placeholder="WPISZ NR REJ..." 
                               value={searchPlate} 
                               onChange={(e) => setSearchPlate(e.target.value.toUpperCase())} 
                               onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
@@ -579,21 +579,21 @@ export default function App() {
                         </h2>
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Nr rejestracyjny</label>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Nr rejestracyjny</label>
                                 <input name="nrRejestracyjny" placeholder="ABC 12345" className={getInputClass('nrRejestracyjny')} value={formData.nrRejestracyjny} onChange={handleInputChange} style={styles.body} />
                             </div>
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Marka</label>
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Marka</label>
                                   <input name="marka" placeholder="np. Toyota" className={getInputClass('marka')} value={formData.marka} onChange={handleInputChange} style={styles.body} />
                                 </div>
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Model</label>
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Model</label>
                                   <input name="model" placeholder="np. Corolla" className={getInputClass('model')} value={formData.model} onChange={handleInputChange} style={styles.body} />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Ubezpieczyciel</label>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Ubezpieczyciel</label>
                                 <select name="ubezpieczyciel" className={getInputClass('ubezpieczyciel', 'select')} value={formData.ubezpieczyciel} onChange={handleInputChange} style={styles.body}>
                                     <option value="">Wybierz z listy...</option>
                                     {TOWARZYSTWA.map(t => <option key={t} value={t}>{t}</option>)}
@@ -601,11 +601,11 @@ export default function App() {
                             </div>
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Nr polisy</label>
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Nr polisy</label>
                                   <input name="numerPolisy" placeholder="Numer polisy" className={getInputClass('numerPolisy')} value={formData.numerPolisy} onChange={handleInputChange} style={styles.body} />
                                 </div>
                                 <div className="flex-1">
-                                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Data rozwiązania</label>
+                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Data rozwiązania</label>
                                   <input name="dataRozwiazania" type="date" className={getInputClass('dataRozwiazania', 'date')} value={formData.dataRozwiazania} onChange={handleInputChange} style={styles.body} />
                                 </div>
                             </div>
