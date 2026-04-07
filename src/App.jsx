@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from
 import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { 
     Shield, LayoutDashboard, Database, FileText, RotateCw, Tags, GitCompare, BarChart3, LogOut, 
-    ChevronRight, Search, CheckSquare, Square, Download, RotateCcw, AlertCircle, Loader2 
+    ChevronRight, Search, CheckSquare, Square, Download, RotateCcw, AlertCircle, Loader2, Menu, X
 } from 'lucide-react';
 
 const firebaseConfig = {
@@ -90,6 +90,7 @@ export default function App() {
     const [module, setModule] = useState('dashboard');
     const [records, setRecords] = useState([]);
     const [loginError, setLoginError] = useState('');
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
     const [formData, setFormData] = useState(initialFormData);
     const [searchPlate, setSearchPlate] = useState('');
@@ -148,6 +149,11 @@ export default function App() {
         setShowResetConfirm(false);
     };
 
+    const navigateToModule = (modName) => {
+        setModule(modName);
+        setIsMobileMenuOpen(false);
+    };
+
     const getInputClass = (fieldName, type = 'text') => {
         const isError = errors.includes(fieldName);
         const isEmpty = !formData[fieldName];
@@ -187,8 +193,19 @@ export default function App() {
             setErrors([]);
 
             const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
+            
+            // Wykluczamy zmienne z zapisu do bazy danych
+            const {
+                numerPolisy,
+                dataRozwiazania,
+                dataPodpisania,
+                miejscowoscWystawienia,
+                art,
+                ...dataToSave
+            } = formData;
+
             await setDoc(doc(db, "pojazdy", docId), {
-                ...formData, updatedAt: new Date().toISOString()
+                ...dataToSave, updatedAt: new Date().toISOString()
             });
 
             if (!window.jspdf) {
@@ -396,17 +413,47 @@ export default function App() {
     if (!user) return <LoginScreen onLogin={handleLogin} error={loginError} />;
 
     return (
-        <div className="flex h-screen overflow-hidden text-left bg-[#f8fafc] fade-in">
-            <aside className="w-64 bg-white border-r border-slate-100 flex flex-col p-6 shrink-0 overflow-y-auto hide-scrollbar">
-                <div className="flex items-center gap-3 mb-8 px-2">
-                    <div className="p-2 bg-[#0067b1] rounded-xl text-white shadow-lg"><Shield /></div>
+        <div className="flex flex-col md:flex-row h-screen overflow-hidden text-left bg-[#f8fafc] fade-in">
+            
+            {/* Mobilny Pasek Nagłówka (Pojawia się tylko na telefonach) */}
+            <div className="md:hidden flex items-center justify-between bg-white p-4 border-b border-slate-100 z-30 shrink-0 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-[#0067b1] rounded-lg text-white shadow-md"><Shield size={20}/></div>
                     <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
                 </div>
+                <button 
+                    onClick={() => setIsMobileMenuOpen(true)} 
+                    className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                >
+                    <Menu size={24} />
+                </button>
+            </div>
+
+            {/* Boczne Menu (Sidebar) */}
+            <aside className={`
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
+                md:translate-x-0 
+                fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col p-6 shrink-0 overflow-y-auto hide-scrollbar transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none
+            `}>
+                <div className="flex items-center justify-between mb-8 px-2">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[#0067b1] rounded-xl text-white shadow-lg"><Shield /></div>
+                        <span className="font-black text-xl tracking-tighter" style={{color:'#0067b1'}}>EGIDA</span>
+                    </div>
+                    {/* Przycisk zamykania na urządzeniach mobilnych */}
+                    <button 
+                        onClick={() => setIsMobileMenuOpen(false)} 
+                        className="md:hidden p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
                 <nav className="flex-1 space-y-2">
                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] px-3 mb-2">Główne</p>
-                    <button onClick={() => setModule('dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><LayoutDashboard size={16}/> Panel</button>
-                    <button onClick={() => setModule('baza')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'baza' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><Database size={16}/> Baza Klientów</button>
-                    <button onClick={() => setModule('wypowiedzenia')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'wypowiedzenia' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><FileText size={16}/> Wypowiedzenia</button>
+                    <button onClick={() => navigateToModule('dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'dashboard' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><LayoutDashboard size={16}/> Panel</button>
+                    <button onClick={() => navigateToModule('baza')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'baza' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><Database size={16}/> Baza Klientów</button>
+                    <button onClick={() => navigateToModule('wypowiedzenia')} className={`w-full flex items-center gap-3 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${module === 'wypowiedzenia' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}><FileText size={16}/> Wypowiedzenia</button>
                     
                     <div className="pt-6 pb-2 px-3">
                         <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Wkrótce</p>
@@ -421,16 +468,25 @@ export default function App() {
                 </div>
             </aside>
 
+            {/* Przyciemnienie tła na mobilkach gdy otwarte jest menu */}
+            {isMobileMenuOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden transition-opacity" 
+                    onClick={() => setIsMobileMenuOpen(false)} 
+                />
+            )}
+
+            {/* Główny kontener aplikacji */}
             <main className="flex-1 p-4 md:p-8 overflow-y-auto">
                 {module === 'dashboard' && (
                     <div className="space-y-8 max-w-4xl">
                         <h2 className="text-3xl font-black uppercase tracking-tighter">Panel Agenta</h2>
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Baza danych</p>
                                 <p className="text-5xl font-black text-slate-800">{records.length}</p>
                             </div>
-                            <button onClick={() => setModule('wypowiedzenia')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
+                            <button onClick={() => navigateToModule('wypowiedzenia')} className="bg-[#0067b1] text-white p-8 rounded-[2.5rem] flex items-center justify-between font-black uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all">
                                 Wypowiedzenia <ChevronRight />
                             </button>
                         </div>
