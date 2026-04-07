@@ -39,7 +39,8 @@ import {
   Square,
   LayoutDashboard,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  MapPin
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE ---
@@ -229,7 +230,6 @@ export default function App() {
   const getInputClass = (fieldName, type = 'text') => {
     const isError = errors.includes(fieldName);
     const isEmpty = !formData[fieldName];
-    // Zaktualizowany kolor placeholderów (slate-300) dla kontrastu z etykietami
     let base = "w-full p-4 rounded-2xl border outline-none transition-all placeholder:text-slate-300 placeholder:font-normal font-medium";
     
     if ((type === 'select' || type === 'date') && isEmpty) {
@@ -260,20 +260,10 @@ export default function App() {
     try {
         setActionStatus('saving');
         const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
-
-        const { 
-            numerPolisy, 
-            dataRozwiazania, 
-            dataPodpisania, 
-            miejscowoscWystawienia, 
-            art, 
-            ...dataToSave 
-        } = formData;
+        const { numerPolisy, dataRozwiazania, dataPodpisania, miejscowoscWystawienia, art, ...dataToSave } = formData;
         
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
-            ...dataToSave, 
-            updatedAt: new Date().toISOString(), 
-            teamId: 'pallada_main'
+            ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
         });
 
         if (!window.jspdf) {
@@ -612,10 +602,10 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* MIEJSCE I DATA WYSTAWIENIA */}
+                    {/* MIEJSCE I DATA WYSTAWIENIA - POPRAWIONA IKONA NA PINEZKĘ Z TWOJEGO SCREENA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 md:col-span-2 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
-                          <Plus size={16} /> Miejsce i data wystawienia
+                          <MapPin size={16} /> Miejsce i data wystawienia
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div>
