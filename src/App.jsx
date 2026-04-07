@@ -69,7 +69,6 @@ const TOWARZYSTWA = [
     "PKO Towarzystwo Ubezpieczeń S.A."
 ];
 
-// Oficjalne czcionki Pallada
 const styles = {
   header: { fontFamily: "'Semplicita Pro', sans-serif" },
   body: { fontFamily: "'Kiro', sans-serif" }
@@ -150,7 +149,6 @@ export default function App() {
   };
   const [formData, setFormData] = useState(initialFormData);
 
-  // Zaktualizowane opisy modułów
   const modules = [
     { id: 'dashboard', label: 'Pulpit', icon: LayoutDashboard, color: 'text-slate-600', bg: 'bg-slate-50', desc: 'Przegląd systemu' },
     { id: 'wznowienia', label: 'Wznowienia', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-50', desc: 'Kontynuacje polis' },
@@ -260,11 +258,25 @@ export default function App() {
     try {
         setActionStatus('saving');
         const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
-        const { numerPolisy, dataRozwiazania, dataPodpisania, miejscowoscWystawienia, art, ...dataToSave } = formData;
+
+        // --- KLUCZOWA LOGIKA SEPARACJI DANYCH ---
+        // Wykluczamy dane unikatowe (polisę i daty konkretnego wypowiedzenia) z zapisu bazy "pojazdy"
+        const { 
+            numerPolisy, 
+            dataRozwiazania, 
+            dataPodpisania, 
+            miejscowoscWystawienia, 
+            art, 
+            ...dataToSave 
+        } = formData;
+        
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
-            ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
+            ...dataToSave, 
+            updatedAt: new Date().toISOString(), 
+            teamId: 'pallada_main'
         });
 
+        // --- GENEROWANIE PDF ---
         if (!window.jspdf) {
             await new Promise((resolve) => {
                 const script = document.createElement('script');
@@ -275,31 +287,172 @@ export default function App() {
         }
         const { jsPDF } = window.jspdf;
         const docPdf = new jsPDF();
-        const palladaBlue = [0, 103, 177];
-        
-        docPdf.setFont("helvetica", "bold");
-        docPdf.setFontSize(22);
-        docPdf.setTextColor(...palladaBlue);
-        docPdf.text("PALLADA", 20, 28);
-        docPdf.setFontSize(10);
-        docPdf.text("TRANS UBEZPIECZENIA", 20, 34);
 
+        const loadFont = async (url, filename, fontName, fontStyle) => {
+            try {
+                const response = await fetch(url);
+                const buffer = await response.arrayBuffer();
+                let binary = '';
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                docPdf.addFileToVFS(filename, window.btoa(binary));
+                docPdf.addFont(filename, fontName, fontStyle);
+            } catch (e) { console.error(e); }
+        };
+
+        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
+        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
+        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
+
+        const palladaBlue = [0, 103, 177]; 
+        const slate500 = [100, 116, 139]; 
+        const slate400 = [148, 163, 184]; 
+        const getFont = (preferred) => docPdf.getFontList()[preferred] ? preferred : "helvetica";
+
+        await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                const ratio = img.width / img.height;
+                docPdf.addImage(img, 'PNG', 20, 15, 28 * ratio, 28, undefined, 'FAST');
+                resolve();
+            };
+            img.onerror = () => {
+                docPdf.setFont(getFont("Semplicita"), "bold");
+                docPdf.setFontSize(24);
+                docPdf.setTextColor(...palladaBlue);
+                docPdf.text("PALLADA", 20, 28);
+                resolve();
+            };
+            img.src = '/pallada_trans_logo.png';
+        });
+
+        docPdf.setFont(getFont("Kiro"), "bold");
+        docPdf.setFontSize(11);
+        docPdf.setTextColor(0);
+        docPdf.text(formatTitleCase(formData.imieNazwisko), 190, 20, { align: 'right' }); 
+        
+        docPdf.setFont(getFont("Kiro"), "normal");
+        docPdf.setFontSize(10);
+        let ulicaZPrefixem = formData.ulica.trim();
+        if (!ulicaZPrefixem.toLowerCase().startsWith('ul.')) ulicaZPrefixem = `ul. ${ulicaZPrefixem}`;
+        docPdf.text(formatTitleCase(ulicaZPrefixem), 190, 26, { align: 'right' });
+        docPdf.text(`${formData.kodPocztowy} ${formatTitleCase(formData.miejscowosc)}`, 190, 32, { align: 'right' });
+        
+        docPdf.setFontSize(8);
+        docPdf.setTextColor(...slate500);
+        docPdf.text("Dane wypowiadającego", 190, 38, { align: 'right' });
+
+        docPdf.setDrawColor(...palladaBlue);
+        docPdf.setLineWidth(0.2); 
+        docPdf.line(20, 48, 190, 48);
+
+        docPdf.setTextColor(...slate500);
+        docPdf.setFontSize(9);
+        docPdf.text("Towarzystwo ubezpieczeniowe:", 20, 65);
+        docPdf.setTextColor(0);
+        docPdf.setFontSize(14);
+        docPdf.setFont(getFont("Kiro"), "bold");
+        docPdf.text(formData.ubezpieczyciel.toUpperCase(), 20, 72); 
+
+        docPdf.setTextColor(...palladaBlue);
+        docPdf.setFontSize(14);
+        docPdf.setFont(getFont("Semplicita"), "bold");
+        docPdf.text("WYPOWIEDZENIE UMOWY OC POSIADACZA POJAZDU", 105, 95, { align: 'center' });
+        
         docPdf.setTextColor(0);
         docPdf.setFontSize(11);
-        docPdf.text(formData.imieNazwisko, 190, 20, { align: 'right' });
-        docPdf.text(formData.ulica, 190, 26, { align: 'right' });
-        docPdf.text(`${formData.kodPocztowy} ${formData.miejscowosc}`, 190, 32, { align: 'right' });
-        docPdf.setDrawColor(...palladaBlue);
-        docPdf.line(20, 48, 190, 48);
-        docPdf.setFontSize(14);
-        docPdf.text("WYPOWIEDZENIE UMOWY OC", 105, 95, { align: 'center' });
+        const formattedDate = formatToPLDate(formData.dataRozwiazania);
+        docPdf.setFont(getFont("Kiro"), "normal");
+        
+        const t1 = "Proszę o rozwiązanie z dniem ";
+        const t2 = formattedDate;
+        const t3 = " umowy ubezpieczenia OC posiadaczy pojazdów mechanicznych, zgodnie z poniższymi danymi identyfikacyjnymi pojazdu i polisy:";
+        
+        docPdf.text(t1, 20, 110);
+        const w1 = docPdf.getTextWidth(t1);
+        docPdf.setFont(getFont("Kiro"), "bold");
+        docPdf.text(t2, 20 + w1, 110);
+        const w2 = docPdf.getTextWidth(t2);
+        docPdf.setFont(getFont("Kiro"), "normal");
+        
+        const lines = docPdf.splitTextToSize(t3, 170 - (w1 + w2));
+        docPdf.text(lines[0], 20 + w1 + w2, 110);
+        const remainingLines = docPdf.splitTextToSize(t1 + t2 + t3, 170).slice(1);
+        let curY = 110 + 7;
+        remainingLines.forEach(line => {
+            docPdf.text(line, 20, curY);
+            curY += 7;
+        });
+        
+        const blockY = curY + 10; 
+
+        const drawDataBlock = (x, y, label, value) => {
+            docPdf.setFontSize(8);
+            docPdf.setTextColor(...slate500);
+            docPdf.setFont(getFont("Kiro"), "normal");
+            docPdf.text(label.toUpperCase(), x, y);
+            docPdf.setFontSize(12);
+            docPdf.setTextColor(0);
+            docPdf.setFont(getFont("Kiro"), "bold");
+            docPdf.text(value || "---", x, y + 7);
+        };
+
+        drawDataBlock(20, blockY, "Numer polisy", formData.numerPolisy);
+        drawDataBlock(75, blockY, "Marka i model pojazdu", `${formData.marka} ${formData.model}`.toUpperCase());
+        drawDataBlock(140, blockY, "Numer rejestracyjny", formData.nrRejestracyjny.toUpperCase());
+        
+        const drawCb = (y, isChecked, textLines) => {
+            docPdf.setDrawColor(...slate400);
+            docPdf.setLineWidth(0.3);
+            docPdf.rect(20, y - 4, 5, 5);
+            if (isChecked) {
+                docPdf.setDrawColor(...palladaBlue);
+                docPdf.setLineWidth(0.8);
+                docPdf.line(21, y - 1.5, 22.5, y);
+                docPdf.line(22.5, y, 25.5, y - 4.5);
+                docPdf.setFont(getFont("Kiro"), "bold");
+                docPdf.setTextColor(0);
+            } else {
+                docPdf.setFont(getFont("Kiro"), "normal");
+                docPdf.setTextColor(...slate500);
+            }
+            docPdf.setFontSize(10.5);
+            let cy = y;
+            textLines.forEach(line => { docPdf.text(line, 30, cy); cy += 5.5; });
+        };
+
+        const cbStartY = blockY + 25; 
+        drawCb(cbStartY, formData.art === '28', ["z ostatnim dniem okresu ubezpieczenia, na który została zawarta (art. 28 Ustawy*)"]);
+        drawCb(cbStartY + 12, formData.art === '28a', ["automatycznie odnowioną, z dniem złożenia wypowiedzenia, ponieważ posiadam", "ubezpieczenie w/w pojazdu w innym zakładzie ubezpieczeń (art. 28 a Ustawy*)"]);
+        drawCb(cbStartY + 28, formData.art === '31', ["jako nabywca / nowy posiadacz pojazdu, z dniem złożenia wypowiedzenia (art.31 Ustawy*)"]);
+        
+        const signY = 240;
+        docPdf.setDrawColor(...slate400);
+        docPdf.setLineWidth(0.2);
+        docPdf.setLineDashPattern([1, 1], 0);
+        docPdf.rect(15, signY - 17, 60, 30); 
+        docPdf.setFontSize(6.5);
+        docPdf.setTextColor(...slate400);
+        docPdf.text("DATA OTRZYMANIA :", 45, signY - 12, { align: 'center' });
+        docPdf.text("PODPIS AGENTA", 45, signY - 8, { align: 'center' });
+        docPdf.setLineDashPattern([], 0); 
+
+        docPdf.setTextColor(0);
         docPdf.setFontSize(10);
-        docPdf.text(`Proszę o rozwiązanie z dniem ${formatToPLDate(formData.dataRozwiazania)} umowy OC`, 20, 110);
-        docPdf.text(`dla pojazdu ${formData.marka} ${formData.model} o nr rej. ${formData.nrRejestracyjny}`, 20, 118);
-        docPdf.text(`Numer polisy: ${formData.numerPolisy}`, 20, 126);
-        docPdf.text(`Ubezpieczyciel: ${formData.ubezpieczyciel}`, 20, 134);
-        docPdf.text(`${formData.miejscowoscWystawienia}, dnia ${formatToPLDate(formData.dataPodpisania)}`, 20, 240);
-        docPdf.line(130, 240, 180, 240);
+        docPdf.text(`${formatTitleCase(formData.miejscowoscWystawienia)}, dnia ${formatToPLDate(formData.dataPodpisania)}`, 20, signY + 20);
+        
+        docPdf.setDrawColor(0);
+        docPdf.setLineWidth(0.4);
+        docPdf.line(125, signY + 15, 190, signY + 15);
+        docPdf.setFontSize(8); 
+        docPdf.text("CZYTELNY PODPIS WYPOWIADAJĄCEGO", 157.5, signY + 20, { align: 'center' });
+
+        docPdf.setTextColor(...slate500);
+        docPdf.setFontSize(7);
+        const lawStr = "* Ustawa z dnia 22.05.2003 o ubezpieczeniach obowiązkowych, Ubezpieczeniowym Funduszu Gwarancyjnym i Polskim Biurze Ubezpieczycieli Komunikacyjnych (Dz. U. z 2018 r. poz. 473).";
+        docPdf.text(docPdf.splitTextToSize(lawStr, 170), 20, 278);
+
         docPdf.save(`wypowiedzenie_${formData.nrRejestracyjny}.pdf`);
         setActionStatus('success'); 
         setTimeout(() => setActionStatus(null), 3000);
@@ -393,7 +546,6 @@ export default function App() {
                 </section>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* DANE WYPOWIADAJĄCEGO */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Users size={16} /> Dane Wypowiadającego
@@ -420,7 +572,6 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* POJAZD I POLISA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Shield size={16} /> Pojazd i Polisa
@@ -460,7 +611,6 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* MIEJSCE I DATA WYSTAWIENIA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 md:col-span-2 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Plus size={16} /> Miejsce i data wystawienia
@@ -477,7 +627,6 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* WYBÓR ARTYKUŁU */}
                     <section className="md:col-span-2 grid grid-cols-1 lg:grid-cols-3 gap-4">
                         {['28', '28a', '31'].map(a => (
                             <button key={a} onClick={() => setFormData({...formData, art: a})} className={`p-6 rounded-[2rem] border-2 flex items-center gap-4 transition-all ${formData.art === a ? 'bg-blue-50 border-[#0067b1] shadow-lg shadow-blue-100' : 'bg-white border-slate-100 hover:border-blue-200'}`}>
@@ -493,7 +642,6 @@ export default function App() {
                     </section>
                 </div>
 
-                {/* PRZYCISK GENEROWANIA */}
                 <button onClick={handleGenerateAndSave} className="w-full p-6 bg-[#0067b1] text-white rounded-[2rem] font-black shadow-2xl shadow-blue-200 flex items-center justify-center gap-4 hover:bg-blue-700 active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-sm" style={styles.header}>
                     {actionStatus === 'saving' ? <Loader2 className="animate-spin" /> : <Download size={24} />}
                     {actionStatus === 'saving' ? "Generowanie..." : "Pobierz wypowiedzenie PDF"}
@@ -522,7 +670,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-gray-50 text-slate-900" style={styles.body}>
-      {/* SIDEBAR */}
       <aside className={`bg-white border-r border-slate-100 transition-all duration-500 ${isSidebarOpen ? 'w-72' : 'w-24'} hidden md:flex flex-col z-30`}>
         <div className="p-8 flex items-center gap-4">
           <div className="bg-[#0067b1] p-3 rounded-2xl text-white shadow-xl shadow-blue-200"><Shield size={28} /></div>
@@ -572,7 +719,6 @@ export default function App() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto bg-[#fdfdfe] relative">
         <button 
           onClick={() => setSidebarOpen(!isSidebarOpen)}
@@ -583,10 +729,9 @@ export default function App() {
         {renderContent()}
       </main>
 
-      {/* MODALE I POWIADOMIENIA */}
       {showResetConfirm && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-              <div className="bg-white p-10 rounded-[3rem] w-full max-w-sm space-y-6 text-center shadow-2xl animate-in zoom-in-95">
+              <div className="bg-white p-10 rounded-[3rem] w-full max-sm space-y-6 text-center shadow-2xl animate-in zoom-in-95">
                   <div className="mx-auto text-rose-500 h-20 w-20 bg-rose-50 rounded-full flex items-center justify-center">
                       <RotateCcw size={40} />
                   </div>
