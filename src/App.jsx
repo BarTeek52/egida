@@ -151,10 +151,15 @@ export default function App() {
   };
   const [formData, setFormData] = useState(initialFormData);
 
+  // Zmiana 1: Ustawienie tytułu karty przeglądarki
+  useEffect(() => {
+    document.title = "Egida";
+  }, []);
+
   const modules = [
     { id: 'dashboard', label: 'Pulpit', icon: LayoutDashboard, color: 'text-slate-600', bg: 'bg-slate-50', desc: 'Przegląd systemu' },
     { id: 'wznowienia', label: 'Wznowienia', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-50', desc: 'Kontynuacje polis' },
-    { id: 'wypowiedzenia', label: 'Wypowiedzenia', icon: FileText, color: 'text-rose-500', bg: 'bg-rose-50', desc: 'Generator dokumentów' },
+    { id: 'wypowiedzenia', label: 'Wypowiedzenia', icon: FileText, color: 'text-rose-500', bg: 'bg-rose-50', desc: 'Generator dokumentu' },
     { id: 'oferty', label: 'Oferty', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', desc: 'Nowe propozycje' },
     { id: 'porownania', label: 'Porównania', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50', desc: 'Zakresów ubezpieczenia' },
     { id: 'statystyki', label: 'Statystyki', icon: BarChart3, color: 'text-emerald-500', bg: 'bg-emerald-50', desc: 'Analiza wyników' },
@@ -451,6 +456,19 @@ export default function App() {
     }
   };
 
+  // Funkcja do dynamicznego wyciągania imienia
+  const getUserFirstName = () => {
+    if (!user) return "Użytkowniku";
+    if (user.displayName) return user.displayName.split(' ')[0];
+    const emailPrefix = user.email.split('@')[0];
+    const namePart = emailPrefix.split('.')[0]; // Obsługa b.zochowski -> b
+    // Jeśli prefix to litera (np. B.), spróbujmy wziąć drugą część lub po prostu sformatować
+    if (namePart.length === 1 && emailPrefix.split('.').length > 1) {
+        return formatTitleCase(emailPrefix.split('.')[1]);
+    }
+    return formatTitleCase(namePart);
+  };
+
   const renderContent = () => {
     if (activeTab === 'dashboard') {
       return (
@@ -458,7 +476,10 @@ export default function App() {
           <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
               <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida</p>
-              <h1 className="text-4xl font-black text-slate-900" style={styles.header}>Dzień dobry, Bartek</h1>
+              {/* Zmiana 2: Nowy format powitania */}
+              <h1 className="text-4xl font-black text-slate-900" style={styles.header}>
+                Cześć, {getUserFirstName()}
+              </h1>
             </div>
             <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -535,7 +556,6 @@ export default function App() {
                 </section>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* DANE WYPOWIADAJĄCEGO */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Users size={16} /> Dane Wypowiadającego
@@ -562,7 +582,6 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* POJAZD I POLISA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <Shield size={16} /> Pojazd i Polisa
@@ -602,7 +621,6 @@ export default function App() {
                         </div>
                     </section>
 
-                    {/* MIEJSCE I DATA WYSTAWIENIA - POPRAWIONA IKONA NA PINEZKĘ Z TWOJEGO SCREENA */}
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 md:col-span-2 space-y-6">
                         <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
                           <MapPin size={16} /> Miejsce i data wystawienia
