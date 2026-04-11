@@ -105,7 +105,7 @@ const WindshieldIcon = ({ size = 20, className = "" }) => (
 );
 
 // --- LOGO PALLADA I ZDJĘCIE POJAZDU (OFERTOWANIE) ---
-const pallada_trans_logo = "/pallada_trans_logo.png"; 
+const pallada_trans_logo = "./pallada_trans_logo.png"; 
 const domyslne_zdjecie_pojazdu = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIxMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjgiIHJ4PSIyIi8+PHBhdGggZD0iTSAzIDExIGwgMiAtNCBoIDE0IGwgMiA0IE0gOCAxOSB2IDIgTSAxNiAxOSB2IDIiLz48Y2lyY2xlIGN4PSI2IiBjeT0iMTkiIHI9IjEiLz48Y2lyY2xlIGN4PSIxOCIgY3k9IjE5IiByPSIxIi8+PC9zdmc+"; 
 
 // --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
@@ -1358,7 +1358,7 @@ export default function App() {
                 docPdf.text("PALLADA", 20, 28);
                 resolve();
             };
-            img.src = '/pallada_trans_logo.png';
+            img.src = './pallada_trans_logo.png';
         });
 
         docPdf.setFont(getFont("Kiro"), "bold");
