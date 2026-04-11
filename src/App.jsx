@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { 
   getAuth, 
@@ -13,8 +13,10 @@ import {
   collection, 
   doc, 
   setDoc, 
+  addDoc,
   onSnapshot, 
-  query 
+  query,
+  serverTimestamp
 } from 'firebase/firestore';
 import { 
   Shield, 
@@ -40,10 +42,28 @@ import {
   LayoutDashboard,
   Layers,
   ArrowUpRight,
-  MapPin
+  MapPin,
+  Trash2,
+  Car,
+  ShieldCheck,
+  Save,
+  CheckCircle2,
+  XCircle,
+  Building2,
+  Settings2,
+  PackagePlus,
+  UserPlus,
+  ShieldAlert,
+  Briefcase,
+  Star,
+  Activity,
+  Scale,
+  FilePlus,
+  Fingerprint,
+  Wrench
 } from 'lucide-react';
 
-// --- KONFIGURACJA I INICJALIZACJA FIREBASE ---
+// --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
 const firebaseConfig = {
     apiKey: "AIzaSyD8ioxiSNO3mI_ppLRezGdj-b5hCB7-hwg",
     authDomain: "egida-os.firebaseapp.com",
@@ -58,7 +78,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'pallada-eigda';
 
-// --- STAŁE I STYLE ---
+// --- STAŁE I STYLE (EGIDA) ---
 const TOWARZYSTWA = [
     "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
     "Compensa TU S.A", "Aviva S.A.", "ALLIANZ Polska S.A. TUiR", "BENEFIA TU S.A.",
@@ -70,15 +90,167 @@ const TOWARZYSTWA = [
     "PKO Towarzystwo Ubezpieczeń S.A."
 ];
 
-// Oficjalne czcionki Pallada
 const styles = {
   header: { fontFamily: "'Semplicita Pro', sans-serif" },
   body: { fontFamily: "'Kiro', sans-serif" }
 };
 
-// --- FUNKCJE FORMATUJĄCE ---
+// --- SYMBOL: Szyba (OFERTOWANIE) ---
+const WindshieldIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M2 18C2 18 3.5 6 12 6C20.5 6 22 18 22 18H2Z" />
+    <path d="M2 18L12 18L22 18" />
+    <path d="M7 11L17 11" />
+  </svg>
+);
+
+// --- LOGO PALLADA I ZDJĘCIE POJAZDU (OFERTOWANIE) ---
+const pallada_trans_logo = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiPjx0ZXh0IHg9IjEwIiB5PSIzNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjMwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzAwNjdiMSI+UEFMTEFEQTwvdGV4dD48L3N2Zz4="; 
+const domyslne_zdjecie_pojazdu = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIxMSIgd2lkdGg9IjE4IiBoZWlnaHQ9IjgiIHJ4PSIyIi8+PHBhdGggZD0iTSAzIDExIGwgMiAtNCBoIDE0IGwgMiA0IE0gOCAxOSB2IDIgTSAxNiAxOSB2IDIiLz48Y2lyY2xlIGN4PSI2IiBjeT0iMTkiIHI9IjEiLz48Y2lyY2xlIGN4PSIxOCIgY3k9IjE5IiByPSIxIi8+PC9zdmc+"; 
+
+// --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
+const KLAUZULE_HESTIA_BAZA = {
+  OC: [
+    "K120 Pojazd zastępczy - motocykl",
+    "K072 Wydłużenie okresu najmu (Wariant Turbo)",
+    "K074 Pojazd zastępczy (Seg. D)",
+    "K092 Zwrot udziału własnego (do 2000 zł)",
+    "K119 Ubezpieczenie opon - zwrot kosztów",
+    "K118 Holowanie pojazdu w Polsce",
+    "K084 Zwiększenie limitu usługi Kontynuacja podróży (Wypadek)",
+    "K082 Zwiększenie limitu usługi Kontynuacja podróży (Wyp. i Awaria)",
+    "K076 Bagaż – rzeczy motocyklisty",
+    "K094 Bagaż – suma do 15 000 zł",
+    "K095 Bagaż – suma do 20 000 zł"
+  ],
+  AC: [
+    "K076 Bagaż – rzeczy motocyklisty",
+    "K094 Bagaż do 15 000 zł",
+    "K095 Bagaż do 20 000 zł",
+    "K120 Pojazd zastępczy - motocykl",
+    "K072 Wydłużenie okresu najmu (Wariant Turbo)",
+    "K074 Pojazd zastępczy segmentu D (Car ASS)",
+    "K092 Zwrot kosztów udziału własnego (do 2000 zł) - Car ASS",
+    "K119 Ubezpieczenie opon - zwrot kosztów",
+    "K118 Holowanie pojazdu w Polsce",
+    "K084 Zwiększenie limitu (Wypadek)",
+    "K082 Zwiększenie limitu (Wypadek i Awaria)",
+    "K078 Ubezpieczenie powłoki ceramicznej (do 3 lat)",
+    "K088 Rozszerzenie Wyposażenie Dodatkowe",
+    "K090 Zwrot kosztów udziału własnego (do 2000 zł) - AC",
+    "K096 Podwyższenie granicy dla powłok ceramicznych",
+    "K122 Powłoka elastomerowa (SU 5000 zł)",
+    "K124 Powłoka elastomerowa (SU 8000 zł)",
+    "K128 Zwiększenie SU w Wyposażeniu dodatkowym",
+    "K070 Stała Suma Ubezpieczenia (Wariant II)",
+    "K126 II AC o powłokę elastomerową (SU 5000 zł)",
+    "K098 II AC o powłokę ceramiczną",
+    "K135 Niezdolność do pracy (NNW KiP)"
+  ],
+  OC_AC: [
+    "K076 Rozszerzenie Bagaż – rzeczy motocyklisty",
+    "K094 Bagaż do 15 000 zł",
+    "K095 Bagaż do 20 000 zł",
+    "K120 Pojazd zastępczy - motocykl",
+    "K072 Wydłużenie najmu (Turbo)",
+    "K074 Pojazd zastępczy segment D",
+    "K092 Zwrot udziału własnego (Car ASS)",
+    "K119 Ubezpieczenie opon",
+    "K118 Holowanie w Polsce",
+    "K084 Zwiększenie limitu (Wypadek)",
+    "K082 Zwiększenie limitu (Wypadek i Awaria)",
+    "K088 Rozszerzenie Wyposażenie Dodatkowe",
+    "K090 Zwrot udziału własnego (AC)",
+    "K096 Podwyższenie granicy dla powłok ceramicznych",
+    "K122 Powłoka elastomerowa (5000 zł)",
+    "K124 Powłoka elastomerowa (8000 zł)",
+    "K128 Zwiększenie SU Wyposażenie dodatkowe",
+    "K070 Stała Suma Ubezpieczenia (Wariant II)",
+    "K126 II AC o powłokę elastomerową (5000 zł)",
+    "K098 II AC o powłokę ceramiczną",
+    "K135 Niezdolność do pracy (NNW KiP)",
+    "K066 Zniesienie udziału w szybach"
+  ]
+};
+
+// --- KONFIGURACJA DODATKÓW PER FIRMA (OFERTOWANIE) ---
+const DODATKI_KONFIG = {
+  "PZU S.A.": [
+    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ass", label: "Assistance", icon: Zap }
+  ],
+  "Ergo Hestia": [
+    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "bagaz", label: "Bagaż", icon: Briefcase },
+    { id: "car_ass", label: "Assistance", icon: Zap, options: ["Wypadek", "Wypadek i Awaria", "Turbo"] },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_prawna", label: "Ochrona Prawna", icon: Scale },
+    { 
+      id: "klauzule_katalog", label: "Katalog Klauzul", icon: FilePlus, 
+      getMultiOptions: (tryb) => {
+        if (tryb === 'OC') return KLAUZULE_HESTIA_BAZA.OC;
+        if (tryb === 'AC') return KLAUZULE_HESTIA_BAZA.AC;
+        return KLAUZULE_HESTIA_BAZA.OC_AC;
+      }
+    }
+  ],
+  "Hestia Biznes": [
+    { id: "nnw", label: "NNW Biznes", icon: UserPlus },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "car_ass", label: "Assistance Biznes", icon: Zap, options: ["Biznes (Polska)", "Biznes (Europa 200km)", "Biznes (Europa 500km)", "Biznes (Europa 1000km)"] },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale },
+    { 
+      id: "klauzule_katalog_biznes", label: "Katalog Klauzul Biznes", icon: FilePlus, 
+      getMultiOptions: (tryb) => {
+        if (tryb === 'OC') return KLAUZULE_HESTIA_BAZA.OC;
+        if (tryb === 'AC') return KLAUZULE_HESTIA_BAZA.AC;
+        return KLAUZULE_HESTIA_BAZA.OC_AC;
+      }
+    }
+  ],
+  "Warta": [
+    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+  ],
+  "Link4": [
+    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "szyby", label: "Szyby 24", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ass", label: "Auto Assistance", icon: Zap },
+    { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+  ],
+  "Default": [
+    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ass", label: "Assistance", icon: Zap },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+  ]
+};
+
+const BAZA_UBEZPIECZYCIELI = [
+  "Ergo Hestia", "Hestia Biznes", "PZU S.A.", "Warta", "Link4", "HDI", "Compensa", 
+  "Wiener", "Interrisk", "Generali", "Allianz", "Uniqa", "MTU"
+];
+
+// --- FUNKCJE FORMATUJĄCE (EGIDA & OFERTOWANIE) ---
 const formatPlate = (val) => val.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
 const formatTitleCase = (text) => text ? text.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, (match) => match.toUpperCase()) : '';
+const formatTitleCaseOferty = (str) => {
+  if (!str) return "";
+  return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
 const formatPostalCode = (val) => {
   const digits = val.replace(/\D/g, '').slice(0, 5);
   if (digits.length <= 2) return digits;
@@ -89,8 +261,25 @@ const formatToPLDate = (dateStr) => {
     const parts = dateStr.split('-');
     return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
 };
+const formatAsKsiega = (val) => {
+  if (!val) return "";
+  let clean = val.replace(/[^\d,]/g, '');
+  let p = clean.split(',');
+  if (p.length > 2) clean = p[0] + ',' + p.slice(1).join('');
+  p = clean.split(',');
+  if (p[1] && p[1].length > 2) p[1] = p[1].substring(0, 2);
+  p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return p.join(',');
+};
+const calculateInstallment = (valStr, divider) => {
+  if (!valStr) return "";
+  const raw = parseFloat(valStr.replace(/\s/g, '').replace(',', '.'));
+  if (isNaN(raw) || divider <= 0) return "";
+  const part = (raw / divider).toFixed(2);
+  return formatAsKsiega(part.replace('.', ','));
+};
 
-// --- EKRAN LOGOWANIA ---
+// --- EKRAN LOGOWANIA (EGIDA) ---
 const LoginScreen = ({ onLogin, error }) => {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
@@ -132,6 +321,835 @@ const LoginScreen = ({ onLogin, error }) => {
     );
 };
 
+
+// --- MODUŁ OFERTOWANIA (Jako wewnętrzny komponent z wklejonym kodem 1:1) ---
+const OfertyModule = ({ user }) => {
+  const [history, setHistory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [pdfMode, setPdfMode] = useState(false);
+  
+  const [errors, setErrors] = useState({ skladka: false, suma: false, metodaNaprawy: false });
+  const [validationError, setValidationError] = useState("");
+  
+  const [expandedDodatek, setExpandedDodatek] = useState(null);
+
+  const [oferta, setOferta] = useState({
+    numerOferty: `OFR/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
+    dataKalkulacji: new Date().toLocaleDateString('pl-PL'),
+    klient: { nazwa: "", czyLeasing: false, wlasciciel: "", typ: "Prywatny" },
+    pojazd: { marka: "", model: "", nrRejestracyjny: "", vin: "" },
+    warianty: []
+  });
+
+  const [nowyWariant, setNowyWariant] = useState({
+    firma: BAZA_UBEZPIECZYCIELI[0],
+    skladka: "",
+    sumaUbezpieczenia: "", 
+    typSumy: "Brutto", 
+    tryb: "OC+AC",
+    zakresAC: { stalaSuma: false, nieredukcyjna: false, metodaNaprawy: "" },
+    dodatki: {},
+    liczbaRat: 1
+  });
+
+  const aktualnaKonfigDodatkow = useMemo(() => {
+    return DODATKI_KONFIG[nowyWariant.firma] || DODATKI_KONFIG["Default"];
+  }, [nowyWariant.firma]);
+
+  // Historia z Firebase
+  useEffect(() => {
+    if (!user) return;
+    try {
+        const historyRef = collection(db, 'artifacts', appId, 'users', user.uid, 'oferty');
+        const unsubscribe = onSnapshot(historyRef, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setHistory(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+        }, (err) => console.warn("Błąd pobierania historii (tryb podglądu)", err));
+        return () => unsubscribe();
+    } catch (e) {
+        console.warn("Błąd bazy danych", e)
+    }
+  }, [user]);
+
+  // LOGIKA GENEROWANIA PDF
+  useEffect(() => {
+    if (!pdfMode) return;
+    
+    const triggerPdfGeneration = () => {
+      const element = document.getElementById('pdf-content');
+      if (!element) return;
+      
+      const opt = {
+        margin:       [8, 0, 8, 0], // Wyzerowane marginesy boczne
+        filename:     `Oferta_${oferta.numerOferty.replace(/\//g, '_')}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true, 
+          logging: false, 
+          windowWidth: 800,
+          width: 800, 
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0 
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'], avoid: '.break-inside-avoid' }
+      };
+
+      window.html2pdf().set(opt).from(element).save().then(() => {
+        setPdfMode(false);
+      }).catch(err => {
+        console.error("PDF Error:", err);
+        setValidationError("Błąd podczas generowania pliku PDF.");
+        setPdfMode(false);
+      });
+    };
+
+    const timer = setTimeout(() => {
+      if (window.html2pdf) {
+        triggerPdfGeneration();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = () => triggerPdfGeneration();
+        script.onerror = () => {
+          setPdfMode(false);
+          setValidationError("Błąd ładowania biblioteki PDF. Sprawdź połączenie.");
+        };
+        document.body.appendChild(script);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [pdfMode, oferta]);
+
+  const handleInputChange = (section, field, value, formatFn) => {
+    let finalValue = value;
+    if (formatFn) finalValue = formatFn(value);
+    setOferta(prev => ({ ...prev, [section]: { ...prev[section], [field]: finalValue } }));
+  };
+
+  const handleKwotaChange = (field, value) => {
+    setNowyWariant(prev => ({ ...prev, [field]: formatAsKsiega(value) }));
+  };
+
+  const handleKwotaBlur = (field) => {
+    setNowyWariant(prev => {
+      let val = prev[field];
+      if (!val) return prev;
+      if (!val.includes(',')) {
+        return { ...prev, [field]: val + ',00' };
+      } else {
+        const parts = val.split(',');
+        if (parts[1].length === 0) return { ...prev, [field]: val + '00' };
+        if (parts[1].length === 1) return { ...prev, [field]: val + '0' };
+      }
+      return prev;
+    });
+  };
+
+  const dodajWariant = () => {
+    const rawSkladka = (nowyWariant.skladka || "").replace(/\s/g, '').replace(',', '.');
+    const rawSuma = (nowyWariant.sumaUbezpieczenia || "").replace(/\s/g, '').replace(',', '.');
+
+    let hasError = false;
+    let newErrors = { skladka: false, suma: false, metodaNaprawy: false };
+    let missingFields = [];
+
+    if (nowyWariant.tryb !== 'OC') {
+      if (!rawSuma || parseFloat(rawSuma) <= 0) {
+        newErrors.suma = true;
+        missingFields.push("Suma Ubezpieczenia");
+        hasError = true;
+      }
+      if (!nowyWariant.zakresAC || !nowyWariant.zakresAC.metodaNaprawy) {
+        newErrors.metodaNaprawy = true;
+        missingFields.push("Metoda Naprawy AC");
+        hasError = true;
+      }
+    }
+
+    if (!rawSkladka || parseFloat(rawSkladka) <= 0) {
+      newErrors.skladka = true;
+      missingFields.push("Łączna składka");
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      setValidationError(`Uzupełnij brakujące dane: ${missingFields.join(", ")}`);
+      setTimeout(() => {
+        setErrors({ skladka: false, suma: false, metodaNaprawy: false });
+        setValidationError("");
+      }, 4000);
+      return;
+    }
+
+    const typLabel = nowyWariant.firma === "Hestia Biznes" ? "Firma" : "Prywatny";
+    const wariantZTypem = { ...nowyWariant, typKlienta: typLabel, id: Date.now() };
+    
+    setOferta(prev => ({ ...prev, warianty: [...prev.warianty, wariantZTypem] }));
+    setNowyWariant(prev => ({ ...prev, skladka: "", zakresAC: { ...prev.zakresAC, metodaNaprawy: "" } }));
+    setExpandedDodatek(null);
+  };
+
+  const zapiszWBazie = async () => {
+    if (!user || oferta.warianty.length === 0) return;
+    setSaving(true);
+    try {
+      const historyRef = collection(db, 'artifacts', appId, 'users', user.uid, 'oferty');
+      await addDoc(historyRef, { ...oferta, createdAt: serverTimestamp(), userId: user.uid });
+    } catch (err) { console.error("Błąd zapisu", err); }
+    finally { setSaving(false); }
+  };
+
+  const handleDodatekToggle = (dodatek) => {
+    const isCurrentlyActive = !!nowyWariant.dodatki[dodatek.id];
+    
+    if (isCurrentlyActive) {
+      setNowyWariant(prev => {
+        const newDodatki = { ...prev.dodatki };
+        delete newDodatki[dodatek.id];
+        return { ...prev, dodatki: newDodatki };
+      });
+      setExpandedDodatek(null);
+    } else {
+      const isMulti = dodatek.getMultiOptions || (dodatek.multiOptions && dodatek.multiOptions.length > 0);
+      const isStandardOptions = dodatek.options && dodatek.options.length > 0;
+
+      if (isStandardOptions || isMulti) {
+        setExpandedDodatek(prev => prev === dodatek.id ? null : dodatek.id);
+        if (isMulti && !nowyWariant.dodatki[dodatek.id]) {
+          setNowyWariant(prev => ({
+            ...prev,
+            dodatki: { ...prev.dodatki, [dodatek.id]: [] }
+          }));
+        }
+      } else {
+        setNowyWariant(prev => ({
+          ...prev,
+          dodatki: { ...prev.dodatki, [dodatek.id]: true }
+        }));
+      }
+    }
+  };
+
+  const handleSubOptionSelect = (id, option, e, isMulti = false) => {
+    e.stopPropagation();
+    setNowyWariant(prev => {
+      if (isMulti) {
+        let currentArray = prev.dodatki[id] || [];
+        if (!Array.isArray(currentArray)) currentArray = [];
+        if (currentArray.includes(option)) {
+          currentArray = currentArray.filter(o => o !== option);
+        } else {
+          currentArray = [...currentArray, option];
+        }
+        return { ...prev, dodatki: { ...prev.dodatki, [id]: currentArray } };
+      } else {
+        return { ...prev, dodatki: { ...prev.dodatki, [id]: option } };
+      }
+    });
+    if (!isMulti) setExpandedDodatek(null);
+  };
+
+  return (
+    <>
+      {!pdfMode && (
+        <div className="min-h-screen bg-[#f0f4f8] text-[#1e293b] pb-40 w-full" style={{ fontFamily: 'Kiro, sans-serif' }}>
+          <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-[#0067b1] rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <Zap size={20} fill="currentColor" />
+                </div>
+                <span className="text-lg font-black text-[#0067b1] hidden sm:block tracking-tighter uppercase" style={{ fontFamily: 'Semplicita Pro' }}>EIGDA</span>
+              </div>
+
+              <div className="flex-1 max-w-xl relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0067b1] transition-colors" size={16} />
+                <input 
+                  type="text"
+                  placeholder="Wyszukaj ofertę..."
+                  className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-[#0067b1]/5 focus:border-[#0067b1] outline-none transition-all placeholder:text-slate-400 font-bold text-slate-700"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                 <div className="hidden sm:block text-right">
+                    <p className="text-[10px] font-black text-[#0067b1] uppercase tracking-widest tracking-tight">Jakub Cendrowski</p>
+                    <p className="text-[9px] text-slate-500 uppercase font-bold">Menedżer Sprzedaży</p>
+                 </div>
+                 <div className="w-10 h-10 bg-[#0067b1] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-inner uppercase border-4 border-white"> JC </div>
+              </div>
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-md border-t border-slate-100 px-6 py-2.5 shadow-sm">
+              <div className="max-w-7xl mx-auto flex items-center gap-6 overflow-x-auto no-scrollbar text-[10px] font-black uppercase tracking-widest text-slate-500">
+                 <div className="flex items-center gap-2 shrink-0">
+                   <span className="w-1.5 h-1.5 rounded-full bg-green-50 animate-pulse"></span>
+                   ID: <span className="text-slate-900">{oferta.numerOferty}</span>
+                 </div>
+                 {oferta.klient.nazwa && (
+                   <div className="flex items-center gap-2 shrink-0 border-l border-slate-200 pl-4 uppercase">
+                     KLIENT: <span className="text-[#0067b1] font-black tracking-tight">{oferta.klient.nazwa}</span>
+                   </div>
+                 )}
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto px-6 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+              
+              <div className="lg:col-span-4 space-y-6">
+                <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
+                  <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
+                    <LayoutDashboard size={18} /> Podmiot ubezpieczony
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ubezpieczony (Imię i Nazwisko / Firma)</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800 shadow-sm" value={oferta.klient.nazwa} onChange={(e) => handleInputChange('klient', 'nazwa', e.target.value, formatTitleCaseOferty)} />
+                    </div>
+
+                    <div className="flex items-center gap-4 bg-blue-50/30 p-4 rounded-2xl border border-blue-100 shadow-sm">
+                       <input type="checkbox" checked={oferta.klient.czyLeasing} onChange={(e) => handleInputChange('klient', 'czyLeasing', e.target.checked)} className="w-6 h-6 rounded-lg text-[#0067b1] border-slate-300 focus:ring-[#0067b1]" />
+                       <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Leasing / Wynajem</span>
+                    </div>
+                    {oferta.klient.czyLeasing && (
+                      <input className="w-full px-5 py-4 bg-amber-50/50 border-2 border-amber-100 rounded-2xl outline-none text-sm font-black text-slate-800 placeholder:text-amber-400/50 shadow-sm" value={oferta.klient.wlasciciel} onChange={(e) => handleInputChange('klient', 'wlasciciel', e.target.value)} placeholder="Wpisz leasingodawcę..." />
+                    )}
+                  </div>
+                </section>
+
+                <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
+                  <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
+                    <Car size={18} /> Specyfikacja pojazdu
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Marka</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.marka} onChange={(e) => handleInputChange('pojazd', 'marka', e.target.value, formatTitleCaseOferty)} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Model</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.model} onChange={(e) => handleInputChange('pojazd', 'model', e.target.value, formatTitleCaseOferty)} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Numer Rejestracyjny</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Fingerprint size={12} className="text-[#0067b1]"/> Numer VIN</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} placeholder="Wpisz 17 znaków VIN" />
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div className="lg:col-span-8 space-y-10">
+                <section className="bg-white rounded-[2.5rem] p-10 shadow-xl border-t-8 border-[#0067b1] relative overflow-hidden shadow-slate-200/60">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
+                    
+                    <div className="md:col-span-5 space-y-8">
+                      <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 shadow-inner">
+                        {['OC', 'OC+AC', 'AC'].map(id => (
+                          <button 
+                            key={id} 
+                            onClick={() => {
+                              setNowyWariant({...nowyWariant, tryb: id});
+                              setNowyWariant(prev => {
+                                const dod = {...prev.dodatki};
+                                delete dod['klauzule_katalog'];
+                                delete dod['klauzule_katalog_biznes'];
+                                return {...prev, dodatki: dod};
+                              });
+                            }} 
+                            className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
+                          > 
+                            {id} 
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building2 size={16} className="text-[#0067b1]"/> Towarzystwo</label>
+                          <select className="w-full px-5 py-4.5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
+                            {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
+                          </select>
+                        </div>
+
+                        {nowyWariant.tryb !== 'OC' && (
+                          <div className="space-y-3 relative">
+                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
+                            <div className="relative">
+                              <input type="text" className={`w-full pl-6 pr-36 py-4.5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
+                              <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-2 relative">
+                          <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
+                          <div className="relative">
+                            <input type="text" className={`w-full pl-6 pr-36 py-4.5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
+                            <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-lg tracking-widest">PLN</span>
+                          </div>
+                          <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
+                            {[1, 2, 4, 12].map(raty => (
+                              <button key={raty} onClick={() => setNowyWariant({...nowyWariant, liczbaRat: raty})} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-wider ${nowyWariant.liczbaRat === raty ? 'bg-[#0067b1] text-white' : 'text-slate-500'}`}> {raty === 1 ? '1 Rata' : `${raty} Raty`} </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="hidden md:block mt-8">
+                         {validationError && (
+                           <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
+                             <XCircle size={18} /> {validationError}
+                           </div>
+                         )}
+                         <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                           <Plus size={26} /> Dodaj wariant
+                         </button>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-7 space-y-8">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+                        <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><PackagePlus size={20} /> Konfiguracja Rozszerzeń</p>
+                        <Layers size={20} className="text-[#0067b1]/30" />
+                      </div>
+
+                      <div className="space-y-10 bg-blue-50/40 p-8 rounded-[3.5rem] border border-blue-100 shadow-inner">
+                        {(nowyWariant.tryb === 'OC+AC' || nowyWariant.tryb === 'AC') && (
+                          <>
+                            <div className="space-y-4">
+                              <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Wrench size={14}/> Metoda naprawy (AC)</p>
+                              <div className={`grid grid-cols-3 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
+                                {['Kosztorysowy', 'Partnerski', 'ASO'].map(metoda => (
+                                  <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[9px] xs:text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1]'}`}> {metoda} </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
+                              <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-[#0067b1]'}`}>
+                                  <Activity size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest">Stała wartość<br/>pojazdu</span>
+                                </button>
+                                <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-[#0067b1]'}`}>
+                                  <ShieldCheck size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest">Brak redukcji<br/>sumy</span>
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Star size={14}/> Dodatki ubezpieczyciela</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {aktualnaKonfigDodatkow
+                              .filter(dodatek => !dodatek.showIn || dodatek.showIn.includes(nowyWariant.tryb))
+                              .map(dodatek => {
+                                const IconComponent = dodatek.icon || PackagePlus;
+                                const isActive = !!nowyWariant.dodatki[dodatek.id];
+                                const isExpanded = expandedDodatek === dodatek.id;
+                                
+                                const isMulti = !!dodatek.getMultiOptions;
+                                const currentMultiOptions = isMulti ? dodatek.getMultiOptions(nowyWariant.tryb) : [];
+                                
+                                let displayLabel = dodatek.label;
+                                if (isActive && !isMulti && typeof nowyWariant.dodatki[dodatek.id] === 'string' && nowyWariant.dodatki[dodatek.id] !== 'true') {
+                                  displayLabel = `${dodatek.label}: ${nowyWariant.dodatki[dodatek.id]}`;
+                                } else if (isActive && isMulti && Array.isArray(nowyWariant.dodatki[dodatek.id])) {
+                                  displayLabel = `${dodatek.label} (${nowyWariant.dodatki[dodatek.id].length})`;
+                                }
+
+                                return (
+                                  <div key={dodatek.id} className="flex flex-col gap-2">
+                                    <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
+                                      <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50'}`}><IconComponent size={24} /></div>
+                                      <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
+                                      {isActive && <CheckCircle2 size={16} className="absolute top-3 right-3 text-white/80" />}
+                                    </button>
+                                    
+                                    {isExpanded && !isMulti && dodatek.options && (
+                                      <div className="flex flex-col gap-1.5 animate-in slide-in-from-top-2">
+                                        {dodatek.options.map(opt => (
+                                          <button key={opt} onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e)} className="py-3 px-2 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white border-2 border-blue-50 text-[#0067b1] hover:bg-[#0067b1] hover:text-white shadow-sm"> {opt} </button>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {isExpanded && isMulti && (
+                                       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#001c3d]/60 p-6 backdrop-blur-md animate-in fade-in" onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }}>
+                                        <div className="bg-white rounded-[3.5rem] w-full max-w-xl shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 border border-white/20" onClick={e => e.stopPropagation()}>
+                                          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 rounded-t-[3.5rem]">
+                                            <div className="flex flex-col gap-1">
+                                              <p className="text-[14px] font-black uppercase text-[#0067b1] tracking-[0.25em] flex items-center gap-3">
+                                                <IconComponent size={22} /> {dodatek.label}
+                                              </p>
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Wariant: {nowyWariant.tryb}</p>
+                                            </div>
+                                            <button onClick={() => setExpandedDodatek(null)} className="text-slate-400 hover:text-red-500 bg-white p-3 rounded-full shadow-lg border border-slate-100 transition-all active:scale-90">
+                                              <XCircle size={26} />
+                                            </button>
+                                          </div>
+                                          
+                                          <div className="p-8 overflow-y-auto no-scrollbar space-y-3 flex-1">
+                                            {currentMultiOptions.map(opt => {
+                                              const selectedArray = nowyWariant.dodatki[dodatek.id] || [];
+                                              const isMultiSelected = selectedArray.includes(opt);
+                                              return (
+                                                <button
+                                                  key={opt}
+                                                  onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e, true)}
+                                                  className={`w-full py-5 px-6 rounded-3xl text-[10px] font-black tracking-wide text-left transition-all border-2 flex items-center justify-between gap-5 ${isMultiSelected ? 'bg-blue-50 border-[#0067b1] text-[#0067b1] shadow-inner' : 'bg-white border-slate-100 text-slate-500 hover:bg-blue-50/30 hover:border-blue-200'}`}
+                                                >
+                                                  <span className="leading-tight flex-1 text-[11px] font-black text-[#1e293b]">{opt}</span>
+                                                  {isMultiSelected ? (
+                                                    <CheckCircle2 size={24} className="text-[#0067b1] shrink-0" />
+                                                  ) : (
+                                                    <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-200 shrink-0"></div>
+                                                  )}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                          
+                                          <div className="p-8 border-t border-slate-100 bg-slate-50 rounded-b-[3.5rem]">
+                                            <button onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }} className="w-full py-6 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white text-[13px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-blue-500/40 hover:scale-[1.01] active:scale-95 transition-all">
+                                              Zatwierdź klauzule
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="block md:hidden mt-8">
+                         {validationError && (
+                           <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
+                             <XCircle size={18} /> {validationError}
+                           </div>
+                         )}
+                         <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                           <Plus size={26} /> Dodaj wariant
+                         </button>
+                      </div>
+
+                    </div>
+                  </div>
+                </section>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-12">
+                  {oferta.warianty.map(w => (
+                    <div key={w.id} className="bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
+                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{w.firma}</h3>
+                          <div className="flex gap-2">
+                            <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full"> <Trash2 size={22} /> </button>
+                      </div>
+                      <div className="p-8 flex-1 flex flex-col justify-between bg-white">
+                        <div className="space-y-4">
+                          {w.tryb !== 'OC' && (
+                            <div className="flex justify-between items-center border-b border-slate-50 pb-5 mb-5 uppercase">
+                              <span className="text-slate-400 text-[10px] font-black">Suma:</span>
+                              <span className="text-[#0067b1] bg-blue-50/80 px-4 py-1.5 rounded-xl font-black text-[11px]">{w.sumaUbezpieczenia} PLN {w.typSumy}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Odpowiedzialność OC</span> {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Autocasco (AC)</span> {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
+                          <div className="flex flex-wrap gap-2 mt-6">
+                            {w.tryb !== 'OC' && <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1"><Wrench size={10} /> {w.zakresAC.metodaNaprawy}</span>}
+                            {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1"><Activity size={10} /> Stała Wartość</span>}
+                            {Object.entries(w.dodatki).map(([id, val]) => {
+                              if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                              const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+                              
+                              if (Array.isArray(val)) {
+                                return val.map(v => (
+                                  <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                    {v}
+                                  </span>
+                                ));
+                              }
+
+                              const label = dKonfig ? dKonfig.label : id;
+                              const displayVal = (typeof val === 'string' && val !== 'true') ? `${label}: ${val}` : label;
+                              return (
+                                <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                  {displayVal}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="pt-10 border-t border-slate-100 text-center mt-8">
+                           <div className="flex items-center justify-center gap-1">
+                            <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
+                            <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {oferta.warianty.length > 0 && (
+                  <div className="relative lg:fixed bottom-8 lg:bottom-12 right-0 lg:right-12 mt-12 lg:mt-0 flex flex-col sm:flex-row gap-5 z-50 px-6 lg:px-0">
+                    <button onClick={zapiszWBazie} disabled={saving} className="h-20 w-full sm:w-auto px-12 bg-white text-slate-700 font-black rounded-[2rem] shadow-2xl border-2 border-slate-50 flex items-center justify-center gap-5"> 
+                      {saving ? <Loader2 className="animate-spin" /> : <Save className="text-[#0067b1]"/>} Zapisz ofertę 
+                    </button>
+                    <button onClick={() => setPdfMode(true)} className="h-20 w-full sm:w-auto px-20 bg-gradient-to-r from-[#0067b1] to-blue-800 text-white font-black rounded-[2rem] shadow-2xl uppercase text-[12px] flex items-center justify-center gap-5 cursor-pointer hover:scale-105 active:scale-95 transition-all"> 
+                      <FileText size={28} /> Generuj PDF <ChevronRight size={24} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+
+          <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+             <div className="max-w-7xl mx-auto flex justify-between items-center">
+               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.3 (Zdjęcie wbudowane w kod)</span>
+               <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
+             </div>
+          </footer>
+        </div>
+      )}
+
+      {/* ========================================= */}
+      {/* KONTENER DLA HTML2PDF - WYIZOLOWANY ABY UNIKNĄĆ UCIĘCIA KRAWĘDZI */}
+      {/* ========================================= */}
+      {pdfMode && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-200/90 backdrop-blur-sm" data-html2canvas-ignore="true">
+          <div className="flex flex-col items-center bg-white p-10 rounded-[3rem] shadow-2xl border border-blue-50 animate-in zoom-in-95">
+            <Loader2 className="animate-spin text-[#0067b1] mb-6" size={56} />
+            <p className="text-sm font-black text-[#0067b1] tracking-[0.2em] uppercase">Generowanie PDF...</p>
+            <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">To zajmie tylko chwilę</p>
+          </div>
+        </div>
+      )}
+
+      {/* Rzeczywisty obszar generowania ukryty pod z-indexem, sztywnie wymuszający 800px bez wpływu urządzeń mobilnych */}
+      {pdfMode && (
+        <div className="absolute top-0 left-0 w-[800px] bg-white z-[9999]" style={{ width: '800px' }}>
+          <div id="pdf-content" className="w-[800px] px-8 py-8 box-border text-slate-900 font-sans mx-auto bg-white">
+            
+            {/* NAGŁÓWEK PALLADA AUTOGLASS */}
+            <div className="flex justify-between items-start mb-5 border-b-2 border-[#0067b1] pb-3 relative">
+              
+              {/* Lewa strona - Logo */}
+              <div className="shrink-0">
+                {pallada_trans_logo ? (
+                  <img src={pallada_trans_logo} alt="Pallada Autoglass" className="h-14 w-auto object-contain" />
+                ) : (
+                  <>
+                    <h1 className="text-[1.8rem] font-black text-[#0067b1] tracking-tighter leading-none mb-0.5">PALLADA</h1>
+                    <p className="text-[#0067b1] font-bold tracking-[0.4em] text-[7px] uppercase">Autoglass</p>
+                  </>
+                )}
+              </div>
+              
+              {/* Prawa strona - Tekst + Wbudowane Zdjęcie */}
+              <div className="flex gap-5 items-start justify-end text-right">
+                
+                {/* Tekst (Tytuł dokumentu, Data, Nr) */}
+                <div className="flex flex-col items-end pt-1">
+                  <h2 className="text-sm font-black uppercase tracking-[0.1em] text-slate-800">Propozycja ubezpieczenia pojazdu</h2>
+                  <div className="mt-1.5 text-[8px] text-slate-500 flex flex-col items-end gap-0.5">
+                    <p><span className="font-bold text-slate-400">Nr kalkulacji:</span> <strong className="text-slate-800">{oferta.numerOferty}</strong></p>
+                    <p><span className="font-bold text-slate-400">Data kalkulacji:</span> <strong className="text-slate-800">{oferta.dataKalkulacji}</strong></p>
+                  </div>
+                </div>
+
+                {/* ZDJĘCIE AUTA WBUDOWANE W KOD */}
+                {domyslne_zdjecie_pojazdu && (
+                  <div className="w-[120px] h-[75px] shrink-0 rounded-md overflow-hidden border border-slate-200">
+                    <img src={domyslne_zdjecie_pojazdu} alt="Pojazd" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                
+              </div>
+            </div>
+
+            {/* METADANE DOKUMENTU */}
+            <div className="mb-6">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-[9px] text-slate-700">
+                <div className="flex justify-between border-b border-slate-100 pb-0.5">
+                  <span className="text-slate-400 font-bold">Marka / model:</span> <strong className="uppercase">{oferta.pojazd.marka || '-'} {oferta.pojazd.model}</strong>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-0.5">
+                  <span className="text-slate-400 font-bold">Ubezpieczony:</span> <strong className="uppercase">{oferta.klient.nazwa || '-'}</strong>
+                </div>
+                <div className="flex justify-between border-b border-slate-100 pb-0.5">
+                  <span className="text-slate-400 font-bold">Nr rejestracyjny:</span> <strong className="uppercase">{oferta.pojazd.nrRejestracyjny || '-'}</strong>
+                </div>
+                {oferta.klient.czyLeasing ? (
+                  <div className="flex justify-between border-b border-slate-100 pb-0.5">
+                    <span className="text-slate-400 font-bold">Właściciel:</span> <strong className="uppercase text-slate-800">{oferta.klient.wlasciciel || '-'}</strong>
+                  </div>
+                ) : (
+                  <div className="flex justify-between border-b border-slate-100 pb-0.5"></div>
+                )}
+                <div className="flex justify-between border-b border-slate-100 pb-0.5">
+                  <span className="text-slate-400 font-bold">VIN:</span> <strong className="uppercase">{oferta.pojazd.vin || '-'}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* ZESTAWIENIE OFERT */}
+            {oferta.warianty.length > 0 && (
+              <div className="pt-2">
+                <div className="bg-[#0067b1] text-white text-[10px] font-black uppercase tracking-[0.15em] px-4 py-2 rounded-t-lg">
+                  Szczegółowe Zestawienie Ofert
+                </div>
+                
+                <div className="flex flex-col border-x border-t border-[#0067b1]/20 rounded-b-lg">
+                  {oferta.warianty.map((w, index) => {
+                    const priceParts = w.skladka.split(',');
+                    const mains = priceParts[0];
+                    const decimals = priceParts[1] || '00';
+
+                    return (
+                    <div key={`pdf-${w.id}`} className={`flex border-b border-[#0067b1]/20 break-inside-avoid bg-white min-h-[95px] w-full box-border ${index === oferta.warianty.length - 1 ? 'rounded-b-lg' : ''}`}>
+                      
+                      {/* Kolumna 1: Ubezpieczyciel & Suma Ubezpieczenia - 22% */}
+                      <div className="w-[22%] p-4 border-r border-slate-100 flex flex-col justify-center bg-slate-50/50 box-border">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[7px] font-black bg-[#0067b1] text-white px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{w.tryb}</span>
+                          <h4 className="text-[12px] font-black text-[#0067b1] uppercase leading-tight">{w.firma}</h4>
+                        </div>
+                        
+                        {w.tryb !== 'OC' && (
+                          <div className="mt-2 pt-2 border-t border-slate-200/60">
+                            <p className="text-[7px] text-slate-400 uppercase font-bold tracking-widest mb-0.5">Suma ubezpieczenia</p>
+                            <p className="text-[10px] font-black text-slate-800 leading-tight">{w.sumaUbezpieczenia} PLN <span className="text-[7px] text-slate-500 font-normal">{w.typSumy}</span></p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Kolumna 2: Zakres Podstawowy - 26% */}
+                      <div className="w-[26%] p-4 border-r border-slate-100 flex flex-col justify-center text-[7.5px] leading-tight box-border">
+                        <ul className="space-y-1.5">
+                          {w.tryb !== 'AC' && (
+                            <li className="flex items-center gap-1.5">
+                              <CheckCircle2 size={10} className="text-[#0067b1] shrink-0"/><span className="font-bold text-slate-800">Ubezpieczenie OC</span>
+                            </li>
+                          )}
+                          {w.tryb !== 'OC' && (
+                            <li className="flex items-center gap-1.5">
+                              <CheckCircle2 size={10} className="text-[#0067b1] shrink-0"/><span className="font-bold text-slate-800">Autocasco (AC)</span>
+                            </li>
+                          )}
+                          {w.dodatki['nnw'] && (
+                            <li className="flex items-center gap-1.5">
+                              <CheckCircle2 size={10} className="text-[#0067b1] shrink-0"/><span className="font-bold text-slate-800">Następstwa (NNW)</span>
+                            </li>
+                          )}
+                          {(w.dodatki['ass'] || w.dodatki['car_ass']) && (
+                            <li className="flex items-center gap-1.5">
+                              <CheckCircle2 size={10} className="text-[#0067b1] shrink-0"/><span className="font-bold text-slate-800">Assistance</span>
+                            </li>
+                          )}
+                          {w.dodatki['szyby'] && (
+                            <li className="flex items-center gap-1.5">
+                              <CheckCircle2 size={10} className="text-[#0067b1] shrink-0"/><span className="font-bold text-slate-800">Ubezpieczenie Szyb</span>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                        
+                      {/* Kolumna 3: Szczegóły Opcji (Rozszerzenia) - 30% */}
+                      <div className="w-[30%] p-4 border-r border-slate-100 text-[7px] leading-tight flex flex-col justify-center text-slate-600 box-border">
+                        <ul className="space-y-1.5 list-disc pl-3 marker:text-[#0067b1]">
+                          {w.tryb !== 'OC' && w.zakresAC?.stalaSuma && <li>Auto wartość 100% (stała suma)</li>}
+                          {w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna && <li>Brak redukcji sumy ubezpieczenia</li>}
+                          {w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy && <li>Naprawa: <strong className="uppercase text-slate-800">{w.zakresAC.metodaNaprawy}</strong></li>}
+                          
+                          {/* Rozszerzenia dla ASS i Szyb jeśli mają wartość String (np Turbo / Oryginał) */}
+                          {w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string' && <li>Assistance: <strong className="text-slate-800">{w.dodatki['car_ass']}</strong></li>}
+                          {w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string' && <li>Szyby: <strong className="text-slate-800">{w.dodatki['szyby']}</strong></li>}
+
+                          {/* Pozostałe opcje, w tym długa lista klauzul Hestii */}
+                          {Object.entries(w.dodatki).map(([id, val]) => {
+                              if (!val || ['nnw', 'ass', 'car_ass', 'szyby'].includes(id)) return null;
+                              
+                              const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+                              const label = dKonfig ? dKonfig.label : id;
+                              
+                              if (Array.isArray(val)) {
+                                return val.map(v => <li key={v} className="text-slate-700">{v}</li>);
+                              }
+                              
+                              const displayVal = (typeof val === 'string' && val !== 'true') ? `${label}: ${val}` : label;
+                              return <li key={id} className="text-slate-700">{displayVal}</li>;
+                          })}
+                        </ul>
+                      </div>
+
+                      {/* Kolumna 4: Składka domykająca prawą stronę - 22% */}
+                      <div className="w-[22%] p-4 bg-blue-50/30 flex flex-col items-center justify-center box-border">
+                         <div className="text-[7.5px] font-black text-slate-400 tracking-widest uppercase mb-1.5 text-center">
+                           Składka łączna
+                         </div>
+                         <div className="flex items-baseline text-[#0067b1] mb-1.5 whitespace-nowrap">
+                           <span className="text-[1.5rem] font-black tracking-tighter leading-none">{mains}</span>
+                           <span className="text-[0.75rem] font-black leading-none">,{decimals}</span>
+                           <span className="text-[0.6rem] font-black text-[#0067b1]/50 ml-1 uppercase leading-none">PLN</span>
+                         </div>
+                         <div className="text-[6.5px] font-black tracking-widest uppercase text-[#0067b1] text-center bg-white border border-blue-100 px-2 py-1.5 rounded-sm w-full shadow-sm">
+                           {w.liczbaRat === 1 ? 'Płatność jednorazowa' : `W ${w.liczbaRat} ratach po ok. ${calculateInstallment(w.skladka, w.liczbaRat)} PLN`}
+                         </div>
+                      </div>
+
+                    </div>
+                  )})}
+                </div>
+              </div>
+            )}
+
+            {/* STOPKA DOKUMENTU */}
+            <div className="mt-8 pt-4 border-t border-slate-200 flex justify-between items-end break-inside-avoid">
+              <div className="text-[7px] text-slate-500 max-w-[65%] leading-relaxed">
+                <p className="font-black text-slate-800 uppercase tracking-widest mb-1 text-[7px]">Informacja prawna</p>
+                <p>Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.</p>
+              </div>
+              <div className="text-right pl-4">
+                <p className="text-[6px] text-slate-400 uppercase font-bold tracking-widest mb-0.5">Twój doradca</p>
+                <p className="font-black text-[#0067b1] text-[12px] uppercase tracking-wide">Jakub Cendrowski</p>
+                <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">PALLADA Ubezpieczenia</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// --- GŁÓWNA APLIKACJA (EGIDA) ---
 export default function App() {
   const [user, setUser] = useState(null);
   const [init, setInit] = useState(false);
@@ -167,9 +1185,25 @@ export default function App() {
   ];
 
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth).catch((e) => {
+            console.warn("Działanie w trybie podglądu, logowanie anonimowe pominięte.", e);
+          });
+        }
+      } catch (err) { 
+        console.warn("Błąd autentykacji", err); 
+      } finally {
+        setInit(true);
+      }
+    };
+    initAuth();
+    
     const unsubscribe = onAuthStateChanged(auth, (u) => {
         setUser(u);
-        setInit(true);
     });
     return () => unsubscribe();
   }, []);
@@ -646,6 +1680,10 @@ export default function App() {
             </div>
         </div>
       );
+    }
+    
+    if (activeTab === 'oferty') {
+      return <OfertyModule user={user} />;
     }
 
     return (
