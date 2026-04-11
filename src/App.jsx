@@ -961,13 +961,13 @@ const OfertyModule = ({ user }) => {
             <div className="flex justify-between items-start mb-5 border-b-2 border-[#0067b1] pb-3 relative">
               
               {/* Lewa strona - Logo */}
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center">
                 {pallada_trans_logo ? (
-                  <img src={pallada_trans_logo} alt="Pallada Autoglass" className="h-14 w-auto object-contain" />
+                  <img src={pallada_trans_logo} alt="Pallada Ubezpieczenia" className="h-20 w-auto object-contain object-left" />
                 ) : (
                   <>
                     <h1 className="text-[1.8rem] font-black text-[#0067b1] tracking-tighter leading-none mb-0.5">PALLADA</h1>
-                    <p className="text-[#0067b1] font-bold tracking-[0.4em] text-[7px] uppercase">Autoglass</p>
+                    <p className="text-[#0067b1] font-bold tracking-[0.4em] text-[7px] uppercase">Ubezpieczenia</p>
                   </>
                 )}
               </div>
