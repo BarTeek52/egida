@@ -385,7 +385,7 @@ const OfertyModule = ({ user }) => {
         filename:     `Oferta_${oferta.numerOferty.replace(/\//g, '_')}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { 
-          scale: 2, 
+          scale: 4, // ZWIĘKSZONO SKALĘ DLA MAKSYMALNEJ OSTROŚCI (z 2 na 4)
           useCORS: true, 
           logging: false, 
           windowWidth: 800,
@@ -393,7 +393,9 @@ const OfertyModule = ({ user }) => {
           x: 0,
           y: 0,
           scrollX: 0,
-          scrollY: 0 
+          scrollY: 0,
+          imageTimeout: 15000,
+          removeContainer: true
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:    { mode: ['css', 'legacy'], avoid: '.break-inside-avoid' }
@@ -954,8 +956,8 @@ const OfertyModule = ({ user }) => {
 
       {/* Rzeczywisty obszar generowania ukryty pod z-indexem, sztywnie wymuszający 800px bez wpływu urządzeń mobilnych */}
       {pdfMode && (
-        <div className="absolute top-0 left-0 w-[800px] bg-white z-[9999]" style={{ width: '800px' }}>
-          <div id="pdf-content" className="w-[800px] px-8 py-8 box-border text-slate-900 font-sans mx-auto bg-white">
+        <div className="absolute top-0 left-0 w-[800px] bg-white z-[9999]" style={{ width: '800px', imageRendering: 'crisp-edges' }}>
+          <div id="pdf-content" className="w-[800px] px-8 py-8 box-border text-slate-900 font-sans mx-auto bg-white antialiased">
             
             {/* NAGŁÓWEK PALLADA AUTOGLASS */}
             <div className="flex justify-between items-start mb-5 border-b-2 border-[#0067b1] pb-3 relative">
@@ -963,7 +965,7 @@ const OfertyModule = ({ user }) => {
               {/* Lewa strona - Logo */}
               <div className="shrink-0 flex items-center">
                 {pallada_trans_logo ? (
-                  <img src={pallada_trans_logo} alt="Pallada Ubezpieczenia" className="h-28 w-auto object-contain object-left" />
+                  <img src={pallada_trans_logo} alt="Pallada Ubezpieczenia" className="h-28 w-auto object-contain object-left" style={{ imageRendering: 'auto' }} />
                 ) : (
                   <>
                     <h1 className="text-[1.8rem] font-black text-[#0067b1] tracking-tighter leading-none mb-0.5">PALLADA</h1>
@@ -1150,7 +1152,9 @@ const OfertyModule = ({ user }) => {
 };
 
 // --- GŁÓWNA APLIKACJA (EGIDA) ---
+// ... reszta kodu App bez zmian ...
 export default function App() {
+// ... istniejący kod App ...
   const [user, setUser] = useState(null);
   const [init, setInit] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -1269,22 +1273,15 @@ export default function App() {
   const getInputClass = (fieldName, type = 'text') => {
     const isError = errors.includes(fieldName);
     const isEmpty = !formData[fieldName];
-    
-    // Ujednolicony wygląd bazowy z modułu Ofert
     let base = "w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all text-sm font-black shadow-sm placeholder:text-slate-400 placeholder:font-normal";
-    
-    // Szary tekst dla pustych select/date (placeholder), czarny z modelu ofert dla wypełnionych
     if ((type === 'select' || type === 'date') && isEmpty) {
         base += " text-slate-400";
     } else {
         base += " text-slate-800";
     }
-    
-    // Wymuszony szary kolor w standardzie (bg-slate-50), białe na focus + niebieska ramka (jak w Ofertach)
     const status = isError 
         ? "border-red-400 bg-red-50 ring-2 ring-red-100" 
         : "border-slate-100 bg-slate-50 focus:bg-white focus:border-[#0067b1]";
-        
     return `${base} ${status}`;
   };
 
@@ -1301,16 +1298,13 @@ export default function App() {
         setTimeout(() => setActionStatus(null), 3000); 
         return; 
     }
-    
     try {
         setActionStatus('saving');
         const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
         const { numerPolisy, dataRozwiazania, dataPodpisania, miejscowoscWystawienia, art, ...dataToSave } = formData;
-        
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
             ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
         });
-
         if (!window.jspdf) {
             await new Promise((resolve) => {
                 const script = document.createElement('script');
@@ -1321,7 +1315,6 @@ export default function App() {
         }
         const { jsPDF } = window.jspdf;
         const docPdf = new jsPDF();
-
         const loadFont = async (url, filename, fontName, fontStyle) => {
             try {
                 const response = await fetch(url);
@@ -1333,16 +1326,13 @@ export default function App() {
                 docPdf.addFont(filename, fontName, fontStyle);
             } catch (e) { console.error(e); }
         };
-
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
-
         const palladaBlue = [0, 103, 177]; 
         const slate500 = [100, 116, 139]; 
         const slate400 = [148, 163, 184]; 
         const getFont = (preferred) => docPdf.getFontList()[preferred] ? preferred : "helvetica";
-
         await new Promise((resolve) => {
             const img = new Image();
             img.crossOrigin = "Anonymous";
@@ -1360,27 +1350,22 @@ export default function App() {
             };
             img.src = './pallada_trans_logo.png';
         });
-
         docPdf.setFont(getFont("Kiro"), "bold");
         docPdf.setFontSize(11);
         docPdf.setTextColor(0);
         docPdf.text(formatTitleCase(formData.imieNazwisko), 190, 20, { align: 'right' }); 
-        
         docPdf.setFont(getFont("Kiro"), "normal");
         docPdf.setFontSize(10);
         let ulicaZPrefixem = formData.ulica.trim();
         if (!ulicaZPrefixem.toLowerCase().startsWith('ul.')) ulicaZPrefixem = `ul. ${ulicaZPrefixem}`;
         docPdf.text(formatTitleCase(ulicaZPrefixem), 190, 26, { align: 'right' });
         docPdf.text(`${formData.kodPocztowy} ${formatTitleCase(formData.miejscowosc)}`, 190, 32, { align: 'right' });
-        
         docPdf.setFontSize(8);
         docPdf.setTextColor(...slate500);
         docPdf.text("Dane wypowiadającego", 190, 38, { align: 'right' });
-
         docPdf.setDrawColor(...palladaBlue);
         docPdf.setLineWidth(0.2); 
         docPdf.line(20, 48, 190, 48);
-
         docPdf.setTextColor(...slate500);
         docPdf.setFontSize(9);
         docPdf.text("Towarzystwo ubezpieczeniowe:", 20, 65);
@@ -1388,28 +1373,23 @@ export default function App() {
         docPdf.setFontSize(14);
         docPdf.setFont(getFont("Kiro"), "bold");
         docPdf.text(formData.ubezpieczyciel.toUpperCase(), 20, 72); 
-
         docPdf.setTextColor(...palladaBlue);
         docPdf.setFontSize(14);
         docPdf.setFont(getFont("Semplicita"), "bold");
         docPdf.text("WYPOWIEDZENIE UMOWY OC POSIADACZA POJAZDU", 105, 95, { align: 'center' });
-        
         docPdf.setTextColor(0);
         docPdf.setFontSize(11);
         const formattedDate = formatToPLDate(formData.dataRozwiazania);
         docPdf.setFont(getFont("Kiro"), "normal");
-        
         const t1 = "Proszę o rozwiązanie z dniem ";
         const t2 = formattedDate;
         const t3 = " umowy ubezpieczenia OC posiadaczy pojazdów mechanicznych, zgodnie z poniższymi danymi identyfikacyjnymi pojazdu i polisy:";
-        
         docPdf.text(t1, 20, 110);
         const w1 = docPdf.getTextWidth(t1);
         docPdf.setFont(getFont("Kiro"), "bold");
         docPdf.text(t2, 20 + w1, 110);
         const w2 = docPdf.getTextWidth(t2);
         docPdf.setFont(getFont("Kiro"), "normal");
-        
         const lines = docPdf.splitTextToSize(t3, 170 - (w1 + w2));
         docPdf.text(lines[0], 20 + w1 + w2, 110);
         const remainingLines = docPdf.splitTextToSize(t1 + t2 + t3, 170).slice(1);
@@ -1418,9 +1398,7 @@ export default function App() {
             docPdf.text(line, 20, curY);
             curY += 7;
         });
-        
         const blockY = curY + 10; 
-
         const drawDataBlock = (x, y, label, value) => {
             docPdf.setFontSize(8);
             docPdf.setTextColor(...slate500);
@@ -1431,11 +1409,9 @@ export default function App() {
             docPdf.setFont(getFont("Kiro"), "bold");
             docPdf.text(value || "---", x, y + 7);
         };
-
         drawDataBlock(20, blockY, "Numer polisy", formData.numerPolisy);
         drawDataBlock(75, blockY, "Marka i model pojazdu", `${formData.marka} ${formData.model}`.toUpperCase());
         drawDataBlock(140, blockY, "Numer rejestracyjny", formData.nrRejestracyjny.toUpperCase());
-        
         const drawCb = (y, isChecked, textLines) => {
             docPdf.setDrawColor(...slate400);
             docPdf.setLineWidth(0.3);
@@ -1455,12 +1431,10 @@ export default function App() {
             let cy = y;
             textLines.forEach(line => { docPdf.text(line, 30, cy); cy += 5.5; });
         };
-
         const cbStartY = blockY + 25; 
         drawCb(cbStartY, formData.art === '28', ["z ostatnim dniem okresu ubezpieczenia, na który została zawarta (art. 28 Ustawy*)"]);
         drawCb(cbStartY + 12, formData.art === '28a', ["automatycznie odnowioną, z dniem złożenia wypowiedzenia, ponieważ posiadam", "ubezpieczenie w/w pojazdu w innym zakładzie ubezpieczeń (art. 28 a Ustawy*)"]);
         drawCb(cbStartY + 28, formData.art === '31', ["jako nabywca / nowy posiadacz pojazdu, z dniem złożenia wypowiedzenia (art.31 Ustawy*)"]);
-        
         const signY = 240;
         docPdf.setDrawColor(...slate400);
         docPdf.setLineWidth(0.2);
@@ -1471,22 +1445,18 @@ export default function App() {
         docPdf.text("DATA OTRZYMANIA :", 45, signY - 12, { align: 'center' });
         docPdf.text("PODPIS AGENTA", 45, signY - 8, { align: 'center' });
         docPdf.setLineDashPattern([], 0); 
-
         docPdf.setTextColor(0);
         docPdf.setFontSize(10);
         docPdf.text(`${formatTitleCase(formData.miejscowoscWystawienia)}, dnia ${formatToPLDate(formData.dataPodpisania)}`, 20, signY + 20);
-        
         docPdf.setDrawColor(0);
         docPdf.setLineWidth(0.4);
         docPdf.line(125, signY + 15, 190, signY + 15);
         docPdf.setFontSize(8); 
         docPdf.text("CZYTELNY PODPIS WYPOWIADAJĄCEGO", 157.5, signY + 20, { align: 'center' });
-
         docPdf.setTextColor(...slate500);
         docPdf.setFontSize(7);
         const lawStr = "* Ustawa z dnia 22.05.2003 o ubezpieczeniach obowiązkowych, Ubezpieczeniowym Funduszu Gwarancyjnym i Polskim Biurze Ubezpieczycieli Komunikacyjnych (Dz. U. z 2018 r. poz. 473).";
         docPdf.text(docPdf.splitTextToSize(lawStr, 170), 20, 278);
-
         docPdf.save(`wypowiedzenie_${formData.nrRejestracyjny}.pdf`);
         setActionStatus('success'); 
         setTimeout(() => setActionStatus(null), 3000);
@@ -1503,17 +1473,13 @@ export default function App() {
           <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
               <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida</p>
-              {/* Usunięto personalizowane powitanie zgodnie z prośbą */}
-              <h1 className="text-4xl font-black text-slate-900" style={styles.header}>
-                Pulpit Agenta
-              </h1>
+              <h1 className="text-4xl font-black text-slate-900" style={styles.header}>Pulpit Agenta</h1>
             </div>
             <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Aktywny: {user?.email}</span>
             </div>
           </header>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-[#0067b1] p-8 rounded-[2.5rem] text-white shadow-2xl shadow-blue-200 flex flex-col justify-between overflow-hidden relative group">
                 <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
@@ -1526,7 +1492,6 @@ export default function App() {
                   <ArrowUpRight size={16} /> Zarządzaj bazą
                 </div>
             </div>
-
             {modules.filter(m => m.id !== 'dashboard').map((mod) => (
               <button 
                 key={mod.id}
@@ -1544,7 +1509,6 @@ export default function App() {
         </div>
       );
     }
-
     if (activeTab === 'wypowiedzenia') {
       return (
         <div className="max-w-5xl mx-auto p-4 md:p-12 space-y-8 pb-20 animate-in slide-in-from-bottom-4" style={styles.body}>
@@ -1558,7 +1522,6 @@ export default function App() {
                 </div>
                 <button onClick={() => setShowResetConfirm(true)} className="px-8 py-3 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold text-sm hover:bg-rose-50 transition-all shadow-sm">Wyczyść pola</button>
             </header>
-
             <div className="space-y-8">
                 <section className="bg-[#0067b1] rounded-[2.5rem] p-8 shadow-2xl shadow-blue-100 relative overflow-hidden">
                     <div className="relative z-10">
@@ -1575,18 +1538,13 @@ export default function App() {
                               onKeyPress={(e) => e.key === 'Enter' && handleSearch()} 
                             />
                           </div>
-                          <button onClick={handleSearch} className="bg-white text-[#0067b1] px-10 py-5 rounded-2xl font-black hover:bg-blue-50 transition-all uppercase tracking-widest text-sm shadow-xl">
-                              Szukaj
-                          </button>
+                          <button onClick={handleSearch} className="bg-white text-[#0067b1] px-10 py-5 rounded-2xl font-black hover:bg-blue-50 transition-all uppercase tracking-widest text-sm shadow-xl">Szukaj</button>
                       </div>
                     </div>
                 </section>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
-                        <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
-                          <Users size={16} /> Dane Wypowiadającego
-                        </h2>
+                        <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}><Users size={16} /> Dane Wypowiadającego</h2>
                         <div className="space-y-5">
                             <div>
                                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Imię i Nazwisko / Firma</label>
@@ -1608,11 +1566,8 @@ export default function App() {
                             </div>
                         </div>
                     </section>
-
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-6">
-                        <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
-                          <Shield size={16} /> Pojazd i Polisa
-                        </h2>
+                        <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}><Shield size={16} /> Pojazd i Polisa</h2>
                         <div className="space-y-5">
                             <div>
                                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Nr rejestracyjny</label>
@@ -1647,11 +1602,8 @@ export default function App() {
                             </div>
                         </div>
                     </section>
-
                     <section className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 md:col-span-2 space-y-6">
-                        <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}>
-                          <MapPin size={16} /> Miejsce i data wystawienia
-                        </h2>
+                        <h2 className="font-black text-[#0067b1] uppercase text-xs tracking-[0.2em] flex items-center gap-2" style={styles.header}><MapPin size={16} /> Miejsce i data wystawienia</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div>
                               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Data podpisania</label>
@@ -1663,7 +1615,6 @@ export default function App() {
                             </div>
                         </div>
                     </section>
-
                     <section className="md:col-span-2 grid grid-cols-1 lg:grid-cols-3 gap-4">
                         {['28', '28a', '31'].map(a => (
                             <button key={a} onClick={() => setFormData({...formData, art: a})} className={`p-6 rounded-[2rem] border-2 flex items-center gap-4 transition-all ${formData.art === a ? 'bg-blue-50 border-[#0067b1] shadow-lg shadow-blue-100' : 'bg-white border-slate-100 hover:border-blue-200'}`}>
@@ -1678,7 +1629,6 @@ export default function App() {
                         ))}
                     </section>
                 </div>
-
                 <button onClick={handleGenerateAndSave} className="w-full p-6 bg-[#0067b1] text-white rounded-[2rem] font-black shadow-2xl shadow-blue-200 flex items-center justify-center gap-4 hover:bg-blue-700 active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-sm" style={styles.header}>
                     {actionStatus === 'saving' ? <Loader2 className="animate-spin" /> : <Download size={24} />}
                     {actionStatus === 'saving' ? "Generowanie..." : "Pobierz wypowiedzenie PDF"}
@@ -1687,11 +1637,9 @@ export default function App() {
         </div>
       );
     }
-    
     if (activeTab === 'oferty') {
       return <OfertyModule user={user} />;
     }
-
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center" style={styles.body}>
         <div className="w-32 h-32 bg-slate-50 rounded-[3rem] flex items-center justify-center mb-8 border border-slate-100 shadow-inner">
@@ -1699,9 +1647,7 @@ export default function App() {
         </div>
         <h2 className="text-3xl font-black text-slate-800" style={styles.header}>Moduł {activeTab.toUpperCase()}</h2>
         <p className="text-slate-400 font-medium mt-3 max-w-sm">Trwają prace nad wdrożeniem tego modułu. Zapraszamy wkrótce.</p>
-        <button onClick={() => setActiveTab('dashboard')} className="mt-8 px-8 py-3 bg-[#0067b1] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-blue-700 transition-all">
-          Powrót
-        </button>
+        <button onClick={() => setActiveTab('dashboard')} className="mt-8 px-8 py-3 bg-[#0067b1] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-blue-700 transition-all">Powrót</button>
       </div>
     );
   };
@@ -1721,7 +1667,6 @@ export default function App() {
             </div>
           )}
         </div>
-
         <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto hide-scrollbar">
           {modules.map((mod) => (
             <button 
@@ -1740,7 +1685,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-
         <div className="p-6 mt-auto">
           <div className={`flex items-center gap-4 p-3 bg-slate-50 rounded-[2rem] border border-slate-100 ${!isSidebarOpen && 'justify-center'}`}>
             <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100 shrink-0">
@@ -1759,7 +1703,6 @@ export default function App() {
           </button>
         </div>
       </aside>
-
       <main className="flex-1 overflow-y-auto bg-[#fdfdfe] relative">
         <button 
           onClick={() => setSidebarOpen(!isSidebarOpen)}
@@ -1769,7 +1712,6 @@ export default function App() {
         </button>
         {renderContent()}
       </main>
-
       {showResetConfirm && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
               <div className="bg-white p-10 rounded-[3rem] w-full max-sm space-y-6 text-center shadow-2xl animate-in zoom-in-95">
@@ -1787,14 +1729,12 @@ export default function App() {
               </div>
           </div>
       )}
-
       {actionStatus === 'validation_error' && (
           <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-12">
               <AlertCircle className="text-rose-400" /> 
               <span className="font-black text-xs uppercase tracking-widest">Błędy w formularzu!</span>
           </div>
       )}
-
       {actionStatus === 'success' && (
           <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-12">
               <CheckSquare className="text-white" /> 
