@@ -838,7 +838,7 @@ const OfertyModule = ({ user }) => {
                                     )}
                                   </div>
                                 );
-                            })}
+                              })}
                           </div>
                         </div>
                       </div>
@@ -1269,16 +1269,22 @@ export default function App() {
   const getInputClass = (fieldName, type = 'text') => {
     const isError = errors.includes(fieldName);
     const isEmpty = !formData[fieldName];
-    let base = "w-full p-4 rounded-2xl border outline-none transition-all placeholder:text-slate-300 placeholder:font-normal font-medium";
     
+    // Ujednolicony wygląd bazowy z modułu Ofert
+    let base = "w-full px-5 py-4 rounded-2xl border-2 outline-none transition-all text-sm font-black shadow-sm placeholder:text-slate-400 placeholder:font-normal";
+    
+    // Szary tekst dla pustych select/date (placeholder), czarny z modelu ofert dla wypełnionych
     if ((type === 'select' || type === 'date') && isEmpty) {
-        base += " text-slate-300";
+        base += " text-slate-400";
     } else {
-        base += " text-slate-900";
+        base += " text-slate-800";
     }
+    
+    // Wymuszony szary kolor w standardzie (bg-slate-50), białe na focus + niebieska ramka (jak w Ofertach)
     const status = isError 
         ? "border-red-400 bg-red-50 ring-2 ring-red-100" 
-        : "border-slate-100 bg-white shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
+        : "border-slate-100 bg-slate-50 focus:bg-white focus:border-[#0067b1]";
+        
     return `${base} ${status}`;
   };
 
