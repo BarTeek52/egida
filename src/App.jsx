@@ -963,7 +963,7 @@ const OfertyModule = ({ user }) => {
               {/* Lewa strona - Logo */}
               <div className="shrink-0 flex items-center">
                 {pallada_trans_logo ? (
-                  <img src={pallada_trans_logo} alt="Pallada Ubezpieczenia" className="h-20 w-auto object-contain object-left" />
+                  <img src={pallada_trans_logo} alt="Pallada Ubezpieczenia" className="h-28 w-auto object-contain object-left" />
                 ) : (
                   <>
                     <h1 className="text-[1.8rem] font-black text-[#0067b1] tracking-tighter leading-none mb-0.5">PALLADA</h1>
