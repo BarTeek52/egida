@@ -372,6 +372,26 @@ const LoginScreen = ({ onLogin, error }) => {
     );
 };
 
+// --- KOMPONENT: DYNAMICZNE LOGO FIRMY Z FALLBACKIEM NA TEKST ---
+const CompanyLogo = ({ firma }) => {
+  const [imgError, setImgError] = useState(false);
+  const src = LOGOS[firma];
+
+  if (src && !imgError) {
+    return (
+      <img 
+        src={src} 
+        alt={firma} 
+        className="max-h-8 max-w-[130px] object-contain object-left mix-blend-multiply transition-opacity duration-300" 
+        onError={() => setImgError(true)} 
+      />
+    );
+  }
+  // Fallback: jeśli brakuje logo, wyświetlamy samą nazwę firmy
+  return <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{firma}</h3>;
+};
+
+
 // --- MODUŁ OFERTOWANIA (NATYWNY PDF) ---
 const OfertyModule = ({ user }) => {
   const [history, setHistory] = useState([]);
@@ -1347,14 +1367,16 @@ const OfertyModule = ({ user }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-12">
                 {oferta.warianty.map(w => (
                   <div key={w.id} className="bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
-                    <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
-                      <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{w.firma}</h3>
+                    <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-start">
+                      <div className="flex flex-col gap-2">
+                        <div className="h-8 flex items-center">
+                          <CompanyLogo firma={w.firma} />
+                        </div>
                         <div className="flex gap-2">
-                          <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
+                          <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest shadow-sm">{w.tryb}</span>
                         </div>
                       </div>
-                      <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full"> <Trash2 size={22} /> </button>
+                      <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all"> <Trash2 size={22} /> </button>
                     </div>
                     <div className="p-8 flex-1 flex flex-col justify-between bg-white">
                       <div className="space-y-4">
