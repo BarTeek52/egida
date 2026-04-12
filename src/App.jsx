@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { 
   getAuth, 
@@ -76,6 +76,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'pallada-eigda';
 
+// --- SYSTEM CACHE DLA PDF (PRZYSPIESZENIE GENEROWANIA) ---
+const pdfAssetsCache = {
+  jsPdfLoaded: false,
+  fonts: {},
+  logos: {},
+  mainLogo: null
+};
+
 // --- STAŁE I STYLE (EGIDA) ---
 const TOWARZYSTWA = [
     "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
@@ -104,6 +112,23 @@ const WindshieldIcon = ({ size = 20, className = "" }) => (
 
 // --- LOGO PALLADA ---
 const pallada_trans_logo = "./pallada_trans_logo.png"; 
+
+// --- LOGOTYPY TOWARZYSTW ---
+const LOGOS = {
+  "Ergo Hestia": "./ergo_hestia_logo.png",
+  "Ergo Biznes": "./ergo_hestia_logo.png",
+  "PZU S.A.": "./pzu_logo.png",
+  "Warta": "./warta_logo.png",
+  "Link4": "./link4_logo.png",
+  "HDI": "./hdi_logo.png",
+  "Compensa": "./compensa_logo.png",
+  "Wiener": "./wiener_logo.png",
+  "Interrisk": "./interrisk_logo.png",
+  "Generali": "./generali_logo.png",
+  "Allianz": "./allianz_logo.png",
+  "Uniqa": "./uniqa_logo.png",
+  "MTU": "./mtu_logo.png"
+};
 
 // --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
 const KLAUZULE_HESTIA_BAZA = {
@@ -289,6 +314,21 @@ const getUserDisplayName = (email) => {
   return namePart;
 };
 
+// --- FUNKCJA WSPOMAGAJĄCA ŁADOWANIE SKRYPTU ---
+const loadJsPdfScript = async () => {
+    if (window.jspdf) return true;
+    if (pdfAssetsCache.jsPdfLoaded) return true;
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        script.onload = () => {
+            pdfAssetsCache.jsPdfLoaded = true;
+            resolve(true);
+        };
+        document.head.appendChild(script);
+    });
+};
+
 // --- EKRAN LOGOWANIA ---
 const LoginScreen = ({ onLogin, error }) => {
     const [email, setEmail] = useState('');
@@ -380,73 +420,70 @@ const OfertyModule = ({ user }) => {
     }
   }, [user]);
 
-  // LOGIKA NATYWNEGO GENEROWANIA PDF W JSPDF
+  // LOGIKA NATYWNEGO GENEROWANIA PDF W JSPDF + ZAAWANSOWANY CACHE
   const handleGeneratePdfNative = async () => {
     setPdfMode(true);
     try {
-      if (!window.jspdf) {
-          await new Promise((resolve) => {
-              const script = document.createElement('script');
-              script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-              script.onload = resolve;
-              document.head.appendChild(script);
-          });
-      }
+      await loadJsPdfScript();
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      const loadFont = async (url, filename, fontName, fontStyle) => {
-          try {
-              const response = await fetch(url);
-              const buffer = await response.arrayBuffer();
-              let binary = '';
-              const bytes = new Uint8Array(buffer);
-              for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-              doc.addFileToVFS(filename, window.btoa(binary));
+      const loadFontWithCache = async (url, filename, fontName, fontStyle) => {
+          if (!pdfAssetsCache.fonts[filename]) {
+              try {
+                  const response = await fetch(url);
+                  const buffer = await response.arrayBuffer();
+                  let binary = '';
+                  const bytes = new Uint8Array(buffer);
+                  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                  pdfAssetsCache.fonts[filename] = window.btoa(binary);
+              } catch (e) { console.error("Błąd ładowania czcionki", e); }
+          }
+          if (pdfAssetsCache.fonts[filename]) {
+              doc.addFileToVFS(filename, pdfAssetsCache.fonts[filename]);
               doc.addFont(filename, fontName, fontStyle);
-          } catch (e) { console.error(e); }
+          }
       };
       
-      await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
-      await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
-      await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
+      // Ładowanie czcionek używając Cache (jeśli raz pobrano, więcej nie trzeba pytać sieci)
+      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
+      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
+      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
 
-      // Wczytywanie zasobów dodatkowych logotypów Towarzystw
-      const LOGOS = {
-        "Ergo Hestia": "./ergo_hestia_logo.png",
-        "Ergo Biznes": "./ergo_hestia_logo.png",
-        "PZU S.A.": "./pzu_logo.png",
-        "Warta": "./warta_logo.png",
-        "Link4": "./link4_logo.png",
-        "HDI": "./hdi_logo.png",
-        "Compensa": "./compensa_logo.png",
-        "Wiener": "./wiener_logo.png",
-        "Interrisk": "./interrisk_logo.png",
-        "Generali": "./generali_logo.png",
-        "Allianz": "./allianz_logo.png",
-        "Uniqa": "./uniqa_logo.png",
-        "MTU": "./mtu_logo.png"
-      };
-
+      // Ładowanie logotypów Towarzystw przy użyciu Cache
       const uniqueFirms = [...new Set(oferta.warianty.map(w => w.firma))];
       const preloadedLogos = {};
       
       for (const firma of uniqueFirms) {
-          if (LOGOS[firma]) {
+          if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
               await new Promise((resolve) => {
                   const img = new Image();
                   img.crossOrigin = "Anonymous";
                   img.onload = () => {
-                      preloadedLogos[firma] = { img, ratio: img.width / img.height };
+                      pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
                       resolve();
                   };
-                  img.onerror = () => {
-                      console.warn(`Nie udało się załadować loga dla: ${firma}`);
-                      resolve();
-                  };
+                  img.onerror = resolve; // Ignoruj jeśli błąd
                   img.src = LOGOS[firma];
               });
           }
+          if (pdfAssetsCache.logos[firma]) {
+              preloadedLogos[firma] = pdfAssetsCache.logos[firma];
+          }
+      }
+
+      // Ładowanie Loga Pallada przy użyciu Cache
+      if (!pdfAssetsCache.mainLogo) {
+          await new Promise((resolve) => {
+              const img = new Image();
+              img.crossOrigin = "Anonymous";
+              img.onload = () => {
+                  pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
+                  resolve();
+              };
+              img.onerror = resolve;
+              img.src = pallada_trans_logo;
+          });
       }
 
       const palladaBlue = [0, 103, 177];
@@ -458,24 +495,15 @@ const OfertyModule = ({ user }) => {
       const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
 
       // 1. Logo i nagłówek
-      await new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = "Anonymous";
-          img.onload = () => {
-              const ratio = img.width / img.height;
-              // Zmiana rozmiaru wg uwag - taka sama wysokość loga (28) co w wypowiedzeniu
-              doc.addImage(img, 'PNG', 15, 15, 28 * ratio, 28, undefined, 'FAST');
-              resolve();
-          };
-          img.onerror = () => {
-              doc.setFont(getFont("Semplicita"), "bold");
-              doc.setFontSize(22);
-              doc.setTextColor(...palladaBlue);
-              doc.text("PALLADA", 15, 28);
-              resolve();
-          };
-          img.src = './pallada_trans_logo.png';
-      });
+      if (pdfAssetsCache.mainLogo) {
+          const ml = pdfAssetsCache.mainLogo;
+          doc.addImage(ml.img, 'PNG', 15, 15, 28 * ml.ratio, 28, undefined, 'FAST');
+      } else {
+          doc.setFont(getFont("Semplicita"), "bold");
+          doc.setFontSize(22);
+          doc.setTextColor(...palladaBlue);
+          doc.text("PALLADA", 15, 28);
+      }
 
       doc.setFont(getFont("Kiro"), "bold");
       doc.setFontSize(11);
@@ -1429,7 +1457,6 @@ export default function App() {
   };
   const [formData, setFormData] = useState(initialFormData);
 
-  // Ustawienie tytułu karty przeglądarki na "Egida"
   useEffect(() => {
     document.title = "Egida";
   }, []);
@@ -1541,6 +1568,7 @@ export default function App() {
     return `${base} ${status}`;
   };
 
+  // Zoptymalizowane generowanie Wypowiedzenia - używa tego samego Cache!
   const handleGenerateAndSave = async () => {
     const requiredFields = [
         'imieNazwisko', 'ulica', 'kodPocztowy', 'miejscowosc', 
@@ -1561,51 +1589,60 @@ export default function App() {
         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
             ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
         });
-        if (!window.jspdf) {
-            await new Promise((resolve) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-                script.onload = resolve;
-                document.head.appendChild(script);
-            });
-        }
+        
+        await loadJsPdfScript();
         const { jsPDF } = window.jspdf;
         const docPdf = new jsPDF();
-        const loadFont = async (url, filename, fontName, fontStyle) => {
-            try {
-                const response = await fetch(url);
-                const buffer = await response.arrayBuffer();
-                let binary = '';
-                const bytes = new Uint8Array(buffer);
-                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                docPdf.addFileToVFS(filename, window.btoa(binary));
+        
+        const loadFontWithCache = async (url, filename, fontName, fontStyle) => {
+            if (!pdfAssetsCache.fonts[filename]) {
+                try {
+                    const response = await fetch(url);
+                    const buffer = await response.arrayBuffer();
+                    let binary = '';
+                    const bytes = new Uint8Array(buffer);
+                    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                    pdfAssetsCache.fonts[filename] = window.btoa(binary);
+                } catch (e) { console.error(e); }
+            }
+            if (pdfAssetsCache.fonts[filename]) {
+                docPdf.addFileToVFS(filename, pdfAssetsCache.fonts[filename]);
                 docPdf.addFont(filename, fontName, fontStyle);
-            } catch (e) { console.error(e); }
+            }
         };
-        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
-        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
-        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
+
+        await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
+        await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
+        await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
+        
         const palladaBlue = [0, 103, 177]; 
         const slate500 = [100, 116, 139]; 
         const slate400 = [148, 163, 184]; 
         const getFont = (preferred) => docPdf.getFontList()[preferred] ? preferred : "helvetica";
-        await new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => {
-                const ratio = img.width / img.height;
-                docPdf.addImage(img, 'PNG', 20, 15, 28 * ratio, 28, undefined, 'FAST');
-                resolve();
-            };
-            img.onerror = () => {
-                docPdf.setFont(getFont("Semplicita"), "bold");
-                docPdf.setFontSize(24);
-                docPdf.setTextColor(...palladaBlue);
-                docPdf.text("PALLADA", 20, 28);
-                resolve();
-            };
-            img.src = './pallada_trans_logo.png';
-        });
+        
+        if (!pdfAssetsCache.mainLogo) {
+            await new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
+                    resolve();
+                };
+                img.onerror = resolve;
+                img.src = pallada_trans_logo;
+            });
+        }
+
+        if (pdfAssetsCache.mainLogo) {
+            const ml = pdfAssetsCache.mainLogo;
+            docPdf.addImage(ml.img, 'PNG', 20, 15, 28 * ml.ratio, 28, undefined, 'FAST');
+        } else {
+            docPdf.setFont(getFont("Semplicita"), "bold");
+            docPdf.setFontSize(24);
+            docPdf.setTextColor(...palladaBlue);
+            docPdf.text("PALLADA", 20, 28);
+        }
+
         docPdf.setFont(getFont("Kiro"), "bold");
         docPdf.setFontSize(11);
         docPdf.setTextColor(0);
