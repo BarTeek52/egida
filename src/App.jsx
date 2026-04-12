@@ -560,7 +560,7 @@ const OfertyModule = ({ user }) => {
               let startY = currentY;
               
               // --- KROK 1: SYMULACJA WYSOKOŚCI --- 
-              let simMaxY = startY + 34; // Zwiększone dla nowych marginesów logotypów i sumy ubezp.
+              let simMaxY = startY + 36; // Podniesione do 36 mm żeby wszystko "jedno pod drugim" się pomieściło ładnie
               
               let c2Y_sim = startY + 7;
               const addC2 = () => { c2Y_sim += 5.5; };
@@ -635,68 +635,87 @@ const OfertyModule = ({ user }) => {
               }
 
               // --- KROK 4: RYSOWANIE TREŚCI ---
-              // Kolumna 1: Towarzystwo
+              
+              // ==========================================
+              // Kolumna 1: Towarzystwo (Wyśrodkowana w pionie i poziomie)
+              // ==========================================
+              const colCenterX = 37.5; // Środek dla przedziału X od 15 do 60 (szerokość 45)
+              
+              // 1. ZNACZNIK TRYBU (OC/AC)
               doc.setFillColor(...palladaBlue);
-              doc.roundedRect(19, startY + 5, 12, 4, 1, 1, 'F'); // Znacznik OC/AC neico niżej
+              const tagW = 16;
+              doc.roundedRect(colCenterX - (tagW / 2), startY + 4, tagW, 4.5, 1, 1, 'F'); 
               doc.setTextColor(255, 255, 255);
               doc.setFontSize(6);
-              doc.text(w.tryb, 25, startY + 8, { align: 'center' });
+              doc.text(w.tryb, colCenterX, startY + 7.2, { align: 'center' });
               
+              // 2. LOGO POD ZNACZNIKIEM
               const logoData = preloadedLogos[w.firma];
-              
               if (logoData) {
-                  // Lista firm, które powiększamy
                   const powieksozneLoga = ["PZU S.A.", "Interrisk", "Compensa", "Warta"];
                   const isBigger = powieksozneLoga.includes(w.firma);
                   
-                  let maxW = isBigger ? 27 : 24;
-                  let maxH = isBigger ? 12.5 : 10;
+                  let maxW = isBigger ? 28 : 24;
+                  let maxH = isBigger ? 13 : 11;
                   
                   let logoW = maxW;
                   let logoH = logoW / logoData.ratio;
                   
-                  // Ograniczenie wysokości logo
                   if (logoH > maxH) {
                       logoH = maxH;
                       logoW = logoH * logoData.ratio;
                   }
                   
-                  // Przesunięcie całego bloku z logiem o 3 mm w dół względem starszej wersji
-                  let logoY = startY + 9 - (logoH / 2);
-                  
-                  // Wyśrodkowanie w poziomie (w przestrzeni po prawej od tagu OC/AC, ok 27mm wolnego miejsca)
-                  let logoX = 33 + (26 - logoW) / 2;
+                  let logoX = colCenterX - (logoW / 2);
+                  // Dostępna przestrzeń dla logo: pomiędzy dołem znacznika (Y=8.5) a górą napisu "Suma" (Y=24)
+                  let spaceY = 15.5; 
+                  let logoY = startY + 8.5 + (spaceY - logoH) / 2;
                   
                   doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
               } else {
-                  // Fallback
+                  // Fallback tekstowy - wyśrodkowany
                   doc.setTextColor(...palladaBlue);
                   doc.setFontSize(10);
                   doc.setFont(getFont("Kiro"), "bold");
-                  const fNameLines = doc.splitTextToSize(w.firma.toUpperCase(), 25);
-                  doc.text(fNameLines, 33, startY + 10);
+                  const fNameLines = doc.splitTextToSize(w.firma.toUpperCase(), 35);
+                  doc.text(fNameLines, colCenterX, startY + 16, { align: 'center' });
               }
               
+              // 3. SUMA UBEZPIECZENIA POD LOGIEM
               if (w.tryb !== 'OC') {
                   doc.setTextColor(...slate400);
                   doc.setFontSize(6);
                   doc.setFont(getFont("Kiro"), "bold");
-                  doc.text("SUMA UBEZPIECZENIA", 19, startY + 21); // Przesunięto w dół o 3mm
+                  doc.text("SUMA UBEZPIECZENIA", colCenterX, startY + 27, { align: 'center' });
                   
                   doc.setTextColor(...slate800);
                   doc.setFontSize(10);
                   doc.setFont(getFont("Kiro"), "bold");
+                  
                   const valText = `${w.sumaUbezpieczenia} PLN `;
-                  const textW = doc.getTextWidth(valText);
-                  doc.text(valText, 19, startY + 25.5); // Przesunięto w dół o 3mm
+                  const typText = w.typSumy;
+                  
+                  const valW = doc.getTextWidth(valText);
+                  doc.setFontSize(6);
+                  doc.setFont(getFont("Kiro"), "normal");
+                  const typW = doc.getTextWidth(typText);
+                  
+                  const totalW = valW + typW;
+                  const startValX = colCenterX - (totalW / 2);
+                  
+                  doc.setFontSize(10);
+                  doc.setFont(getFont("Kiro"), "bold");
+                  doc.text(valText, startValX, startY + 31.5);
                   
                   doc.setFontSize(6);
                   doc.setFont(getFont("Kiro"), "normal");
                   doc.setTextColor(...slate500);
-                  doc.text(w.typSumy, 19 + textW, startY + 25.5); // Przesunięto w dół o 3mm
+                  doc.text(typText, startValX + valW, startY + 31.5);
               }
 
+              // ==========================================
               // Kolumna 2: Zakres podstawowy (z kółkiem i ptaszkiem)
+              // ==========================================
               let c2Y = startY + 7;
               const drawCheckReal = (text) => {
                   doc.setLineWidth(0.4);
@@ -720,7 +739,9 @@ const OfertyModule = ({ user }) => {
               if (w.dodatki['ass'] || w.dodatki['car_ass']) drawCheckReal("Assistance");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
 
+              // ==========================================
               // Kolumna 3: Rozszerzenia
+              // ==========================================
               let c3Y = startY + 7;
               const drawBulletReal = (text) => {
                   doc.setTextColor(...palladaBlue);
@@ -752,7 +773,9 @@ const OfertyModule = ({ user }) => {
                   }
               });
 
+              // ==========================================
               // Kolumna 4: Składka łączna
+              // ==========================================
               const midY = startY + ((maxY - startY) / 2);
               doc.setTextColor(...slate400);
               doc.setFontSize(6.5);
@@ -1346,7 +1369,7 @@ const OfertyModule = ({ user }) => {
 
           <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
              <div className="max-w-7xl mx-auto flex justify-between items-center">
-               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.6 (Logo Scale Update)</span>
+               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.7 (Centered Elements Update)</span>
                <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
              </div>
           </footer>
