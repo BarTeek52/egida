@@ -102,9 +102,6 @@ const WindshieldIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-// --- LOGO PALLADA ---
-const pallada_trans_logo = "./pallada_trans_logo.png"; 
-
 // --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
 const KLAUZULE_HESTIA_BAZA = {
   OC: [
@@ -444,7 +441,7 @@ const OfertyModule = ({ user }) => {
       const blue50 = [239, 246, 255];
       const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
 
-      // 1. Logo i nagłówek
+      // 1. Logo Pallada (lewa strona)
       await new Promise((resolve) => {
           const img = new Image();
           img.crossOrigin = "Anonymous";
@@ -463,32 +460,69 @@ const OfertyModule = ({ user }) => {
           img.src = './pallada_trans_logo.png';
       });
 
+      // 1.5. Zdjęcie auta (prawa strona - auto_foto.png)
+      await new Promise((resolve) => {
+          const imgAuto = new Image();
+          imgAuto.crossOrigin = "Anonymous";
+          imgAuto.onload = () => {
+              const ratio = imgAuto.width / imgAuto.height;
+              let h = 25;
+              let w = h * ratio;
+              
+              if (w > 45) { 
+                  w = 45;
+                  h = w / ratio;
+              }
+              
+              // Wyrównanie do prawej krawędzi (margines 195)
+              const xPos = 195 - w;
+              doc.addImage(imgAuto, 'PNG', xPos, 15, w, h, undefined, 'FAST');
+              resolve();
+          };
+          imgAuto.onerror = () => {
+              console.warn("Brak pliku auto_foto.png w folderze, pomijam wgrywanie obrazka na prawo.");
+              resolve();
+          };
+          imgAuto.src = './auto_foto.png';
+      });
+
+      // 2. Tekst środkowy (wyśrodkowany na osi dokumentu x: 105)
       doc.setFont(getFont("Kiro"), "bold");
       doc.setFontSize(11);
       doc.setTextColor(...slate800);
-      doc.text("PROPOZYCJA UBEZPIECZENIA POJAZDU", 195, 20, { align: 'right' });
+      doc.text("PROPOZYCJA UBEZPIECZENIA POJAZDU", 105, 20, { align: 'center' });
       
-      doc.setFontSize(7);
-      doc.setTextColor(...slate500);
-      doc.setFont(getFont("Kiro"), "normal");
-      doc.text(`Nr kalkulacji:`, 155, 26, { align: 'right' });
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.setTextColor(...slate800);
-      doc.text(oferta.numerOferty, 195, 26, { align: 'right' });
+      const renderCenteredMixedText = (label, value, y) => {
+          doc.setFontSize(7);
+          doc.setFont(getFont("Kiro"), "normal");
+          const labelW = doc.getTextWidth(label + " ");
+          
+          doc.setFont(getFont("Kiro"), "bold");
+          const valueW = doc.getTextWidth(value);
+          
+          const totalW = labelW + valueW;
+          const startX = 105 - (totalW / 2); // Center minus half width
+          
+          // Rysuj etykiete
+          doc.setFont(getFont("Kiro"), "normal");
+          doc.setTextColor(...slate500);
+          doc.text(label + " ", startX, y);
+          
+          // Rysuj wartosc
+          doc.setFont(getFont("Kiro"), "bold");
+          doc.setTextColor(...slate800);
+          doc.text(value, startX + labelW, y);
+      };
 
-      doc.setFont(getFont("Kiro"), "normal");
-      doc.setTextColor(...slate500);
-      doc.text(`Data kalkulacji:`, 155, 30, { align: 'right' });
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.setTextColor(...slate800);
-      doc.text(oferta.dataKalkulacji, 195, 30, { align: 'right' });
+      renderCenteredMixedText("Nr kalkulacji:", oferta.numerOferty, 26);
+      renderCenteredMixedText("Data kalkulacji:", oferta.dataKalkulacji, 30);
 
       // Gruba niebieska linia
       doc.setDrawColor(...palladaBlue);
       doc.setLineWidth(0.6);
       doc.line(15, 45, 195, 45);
 
-      // 2. Metadane
+      // 3. Metadane pojazdu
       let currentY = 52;
       const drawMetaRow = (label, value, label2, value2, y) => {
           doc.setDrawColor(...slate200);
@@ -520,7 +554,7 @@ const OfertyModule = ({ user }) => {
       drawMetaRow("VIN:", oferta.pojazd.vin, "", "", currentY);
       currentY += 14;
 
-      // 3. Warianty - Rysowanie tabeli
+      // 4. Warianty - Rysowanie tabeli
       if (oferta.warianty.length > 0) {
           let tableStartY = currentY;
           let pageSeparators = [];
@@ -560,7 +594,7 @@ const OfertyModule = ({ user }) => {
               let startY = currentY;
               
               // --- KROK 1: SYMULACJA WYSOKOŚCI --- 
-              let simMaxY = startY + 36; // Podniesione do 36 mm żeby wszystko "jedno pod drugim" się pomieściło ładnie
+              let simMaxY = startY + 36; 
               
               let c2Y_sim = startY + 7;
               const addC2 = () => { c2Y_sim += 5.5; };
@@ -639,9 +673,9 @@ const OfertyModule = ({ user }) => {
               // ==========================================
               // Kolumna 1: Towarzystwo (Wyśrodkowana w pionie i poziomie)
               // ==========================================
-              const colCenterX = 37.5; // Środek dla przedziału X od 15 do 60 (szerokość 45)
+              const colCenterX = 37.5; 
               
-              // 1. ZNACZNIK TRYBU (OC/AC)
+              // ZNACZNIK TRYBU (OC/AC)
               doc.setFillColor(...palladaBlue);
               const tagW = 16;
               doc.roundedRect(colCenterX - (tagW / 2), startY + 4, tagW, 4.5, 1, 1, 'F'); 
@@ -649,7 +683,7 @@ const OfertyModule = ({ user }) => {
               doc.setFontSize(6);
               doc.text(w.tryb, colCenterX, startY + 7.2, { align: 'center' });
               
-              // 2. LOGO POD ZNACZNIKIEM
+              // LOGO POD ZNACZNIKIEM
               const logoData = preloadedLogos[w.firma];
               if (logoData) {
                   const powieksozneLoga = ["PZU S.A.", "Interrisk", "Compensa", "Warta"];
@@ -667,13 +701,11 @@ const OfertyModule = ({ user }) => {
                   }
                   
                   let logoX = colCenterX - (logoW / 2);
-                  // Dostępna przestrzeń dla logo: pomiędzy dołem znacznika (Y=8.5) a górą napisu "Suma" (Y=24)
                   let spaceY = 15.5; 
                   let logoY = startY + 8.5 + (spaceY - logoH) / 2;
                   
                   doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
               } else {
-                  // Fallback tekstowy - wyśrodkowany
                   doc.setTextColor(...palladaBlue);
                   doc.setFontSize(10);
                   doc.setFont(getFont("Kiro"), "bold");
@@ -681,7 +713,7 @@ const OfertyModule = ({ user }) => {
                   doc.text(fNameLines, colCenterX, startY + 16, { align: 'center' });
               }
               
-              // 3. SUMA UBEZPIECZENIA POD LOGIEM
+              // SUMA UBEZPIECZENIA POD LOGIEM
               if (w.tryb !== 'OC') {
                   doc.setTextColor(...slate400);
                   doc.setFontSize(6);
@@ -714,7 +746,7 @@ const OfertyModule = ({ user }) => {
               }
 
               // ==========================================
-              // Kolumna 2: Zakres podstawowy (z kółkiem i ptaszkiem)
+              // Kolumna 2: Zakres podstawowy
               // ==========================================
               let c2Y = startY + 7;
               const drawCheckReal = (text) => {
@@ -820,7 +852,7 @@ const OfertyModule = ({ user }) => {
           drawFrameAndHeader(tableStartY, currentY, isContinued);
       }
 
-      // 4. Stopka
+      // 5. Stopka
       if (currentY > 250) {
           doc.addPage();
           currentY = 20;
@@ -1369,7 +1401,7 @@ const OfertyModule = ({ user }) => {
 
           <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
              <div className="max-w-7xl mx-auto flex justify-between items-center">
-               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.7 (Centered Elements Update)</span>
+               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.8 (Top-Right Photo Update)</span>
                <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
              </div>
           </footer>
