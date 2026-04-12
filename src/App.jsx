@@ -387,7 +387,6 @@ const CompanyLogo = ({ firma }) => {
       />
     );
   }
-  // Fallback: jeśli brakuje logo, wyświetlamy samą nazwę firmy
   return <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{firma}</h3>;
 };
 
@@ -1364,9 +1363,10 @@ const OfertyModule = ({ user }) => {
                 </div>
               </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-12">
+              {/* === ZMODYFIKOWANY ZWIJAK / KARUZELA NA KARTY WARIANTÓW === */}
+              <div className="flex flex-nowrap overflow-x-auto gap-6 mt-12 pb-8 snap-x xl:snap-none" style={{ scrollbarWidth: 'thin' }}>
                 {oferta.warianty.map(w => (
-                  <div key={w.id} className="bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
+                  <div key={w.id} className="w-[85vw] sm:w-[350px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
                     <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-start">
                       <div className="flex flex-col gap-2">
                         <div className="h-8 flex items-center">
