@@ -1215,28 +1215,24 @@ const OfertyModule = ({ user }) => {
 
                     <div className="space-y-10 bg-blue-50/40 p-8 rounded-[3.5rem] border border-blue-100 shadow-inner">
                       {(nowyWariant.tryb === 'OC+AC' || nowyWariant.tryb === 'AC') && (
-                        <>
-                          <div className="space-y-4">
-                            <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Wrench size={14}/> Metoda naprawy (AC)</p>
-                            <div className={`grid grid-cols-3 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
-                              {['Kosztorysowy', 'Partnerski', 'ASO'].map(metoda => (
-                                <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[9px] xs:text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1]'}`}> {metoda} </button>
-                              ))}
-                            </div>
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
+                          
+                          <div className={`grid grid-cols-3 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
+                            {['Kosztorys', 'Partnerski', 'ASO'].map(metoda => (
+                              <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[9px] xs:text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1]'}`}> {metoda} </button>
+                            ))}
                           </div>
 
-                          <div className="space-y-4">
-                            <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
-                            <div className="grid grid-cols-2 gap-4">
-                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-[#0067b1]'}`}>
-                                <Activity size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest">Stała wartość<br/>pojazdu</span>
-                              </button>
-                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-[#0067b1]'}`}>
-                                <ShieldCheck size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest">Brak redukcji<br/>sumy</span>
-                              </button>
-                            </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                              <Activity size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest text-center">Stała wartość<br/>pojazdu</span>
+                            </button>
+                            <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                              <ShieldCheck size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest text-center">Brak redukcji<br/>sumy</span>
+                            </button>
                           </div>
-                        </>
+                        </div>
                       )}
 
                       <div className="space-y-4">
