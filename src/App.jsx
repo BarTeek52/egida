@@ -196,7 +196,7 @@ const DODATKI_KONFIG = {
       }
     }
   ],
-  "Hestia Biznes": [
+  "Ergo Biznes": [
     { id: "nnw", label: "NNW Biznes", icon: UserPlus },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
@@ -237,7 +237,7 @@ const DODATKI_KONFIG = {
 };
 
 const BAZA_UBEZPIECZYCIELI = [
-  "Ergo Hestia", "Hestia Biznes", "PZU S.A.", "Warta", "Link4", "HDI", "Compensa", 
+  "Ergo Hestia", "Ergo Biznes", "PZU S.A.", "Warta", "Link4", "HDI", "Compensa", 
   "Wiener", "Interrisk", "Generali", "Allianz", "Uniqa", "MTU"
 ];
 
@@ -401,7 +401,7 @@ const OfertyModule = ({ user }) => {
       // Wczytywanie zasobów dodatkowych logotypów Towarzystw
       const LOGOS = {
         "Ergo Hestia": "./ergo_hestia_logo.png",
-        "Hestia Biznes": "./ergo_hestia_logo.png",
+        "Ergo Biznes": "./ergo_hestia_logo.png",
         "PZU S.A.": "./pzu_logo.png",
         "Warta": "./warta_logo.png",
         "Link4": "./link4_logo.png",
@@ -893,7 +893,7 @@ const OfertyModule = ({ user }) => {
       return;
     }
 
-    const typLabel = nowyWariant.firma === "Hestia Biznes" ? "Firma" : "Prywatny";
+    const typLabel = nowyWariant.firma === "Ergo Biznes" ? "Firma" : "Prywatny";
     const wariantZTypem = { ...nowyWariant, typKlienta: typLabel, id: Date.now() };
     
     setOferta(prev => ({ ...prev, warianty: [...prev.warianty, wariantZTypem] }));
@@ -1336,7 +1336,7 @@ const OfertyModule = ({ user }) => {
 
           <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
              <div className="max-w-7xl mx-auto flex justify-between items-center">
-               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.4 (Preload logotypów)</span>
+               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.5 (Generali Logo Update)</span>
                <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
              </div>
           </footer>
@@ -1531,9 +1531,9 @@ export default function App() {
                 docPdf.addFont(filename, fontName, fontStyle);
             } catch (e) { console.error(e); }
         };
+        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
-        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
         const palladaBlue = [0, 103, 177]; 
         const slate500 = [100, 116, 139]; 
         const slate400 = [148, 163, 184]; 
