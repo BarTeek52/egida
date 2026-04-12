@@ -560,7 +560,7 @@ const OfertyModule = ({ user }) => {
               let startY = currentY;
               
               // --- KROK 1: SYMULACJA WYSOKOŚCI --- 
-              let simMaxY = startY + 32; // Zwiększone ze względu na rezerwację miejsca dla loga
+              let simMaxY = startY + 34; // Zwiększone dla nowych marginesów logotypów i sumy ubezp.
               
               let c2Y_sim = startY + 7;
               const addC2 = () => { c2Y_sim += 5.5; };
@@ -637,53 +637,63 @@ const OfertyModule = ({ user }) => {
               // --- KROK 4: RYSOWANIE TREŚCI ---
               // Kolumna 1: Towarzystwo
               doc.setFillColor(...palladaBlue);
-              doc.roundedRect(19, startY + 4, 12, 4, 1, 1, 'F');
+              doc.roundedRect(19, startY + 5, 12, 4, 1, 1, 'F'); // Znacznik OC/AC neico niżej
               doc.setTextColor(255, 255, 255);
               doc.setFontSize(6);
-              doc.text(w.tryb, 25, startY + 7, { align: 'center' });
+              doc.text(w.tryb, 25, startY + 8, { align: 'center' });
               
               const logoData = preloadedLogos[w.firma];
               
               if (logoData) {
-                  let logoW = 24;
+                  // Lista firm, które powiększamy
+                  const powieksozneLoga = ["PZU S.A.", "Interrisk", "Compensa", "Warta"];
+                  const isBigger = powieksozneLoga.includes(w.firma);
+                  
+                  let maxW = isBigger ? 27 : 24;
+                  let maxH = isBigger ? 12.5 : 10;
+                  
+                  let logoW = maxW;
                   let logoH = logoW / logoData.ratio;
                   
-                  // Ograniczenie wysokości logo do maks. 10 mm
-                  if (logoH > 10) {
-                      logoH = 10;
+                  // Ograniczenie wysokości logo
+                  if (logoH > maxH) {
+                      logoH = maxH;
                       logoW = logoH * logoData.ratio;
                   }
                   
-                  // Wyśrodkowanie loga względem znacznika trybu (OC/AC)
-                  let logoY = startY + 6 - (logoH / 2);
+                  // Przesunięcie całego bloku z logiem o 3 mm w dół względem starszej wersji
+                  let logoY = startY + 9 - (logoH / 2);
                   
-                  doc.addImage(logoData.img, 'PNG', 33, logoY, logoW, logoH, undefined, 'FAST');
+                  // Wyśrodkowanie w poziomie (w przestrzeni po prawej od tagu OC/AC, ok 27mm wolnego miejsca)
+                  let logoX = 33 + (26 - logoW) / 2;
+                  
+                  doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
               } else {
-                  // Fallback: jeśli logo nie załadowało się - rysujemy nazwę towarzystwa tekstowo
+                  // Fallback
                   doc.setTextColor(...palladaBlue);
                   doc.setFontSize(10);
                   doc.setFont(getFont("Kiro"), "bold");
                   const fNameLines = doc.splitTextToSize(w.firma.toUpperCase(), 25);
-                  doc.text(fNameLines, 33, startY + 7.5);
+                  doc.text(fNameLines, 33, startY + 10);
               }
               
               if (w.tryb !== 'OC') {
                   doc.setTextColor(...slate400);
                   doc.setFontSize(6);
                   doc.setFont(getFont("Kiro"), "bold");
-                  doc.text("SUMA UBEZPIECZENIA", 19, startY + 18);
+                  doc.text("SUMA UBEZPIECZENIA", 19, startY + 21); // Przesunięto w dół o 3mm
                   
                   doc.setTextColor(...slate800);
                   doc.setFontSize(10);
                   doc.setFont(getFont("Kiro"), "bold");
                   const valText = `${w.sumaUbezpieczenia} PLN `;
                   const textW = doc.getTextWidth(valText);
-                  doc.text(valText, 19, startY + 22.5);
+                  doc.text(valText, 19, startY + 25.5); // Przesunięto w dół o 3mm
                   
                   doc.setFontSize(6);
                   doc.setFont(getFont("Kiro"), "normal");
                   doc.setTextColor(...slate500);
-                  doc.text(w.typSumy, 19 + textW, startY + 22.5);
+                  doc.text(w.typSumy, 19 + textW, startY + 25.5); // Przesunięto w dół o 3mm
               }
 
               // Kolumna 2: Zakres podstawowy (z kółkiem i ptaszkiem)
@@ -1336,7 +1346,7 @@ const OfertyModule = ({ user }) => {
 
           <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
              <div className="max-w-7xl mx-auto flex justify-between items-center">
-               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.5 (Generali Logo Update)</span>
+               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.6 (Logo Scale Update)</span>
                <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
              </div>
           </footer>
