@@ -276,6 +276,19 @@ const calculateInstallment = (valStr, divider) => {
   return formatAsKsiega(part.replace('.', ','));
 };
 
+// --- NAZWA UŻYTKOWNIKA Z EMAILA ---
+const getUserDisplayName = (email) => {
+  if (!email) return "Niezalogowany";
+  const namePart = email.split('@')[0];
+  const parts = namePart.split('.');
+  if (parts.length === 2) {
+    const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    const lastName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+    return `${firstName} ${lastName}`;
+  }
+  return namePart;
+};
+
 // --- EKRAN LOGOWANIA ---
 const LoginScreen = ({ onLogin, error }) => {
     const [email, setEmail] = useState('');
@@ -846,7 +859,11 @@ const OfertyModule = ({ user }) => {
       doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
       doc.setTextColor(...palladaBlue);
       doc.setFontSize(10);
-      doc.text("JAKUB CENDROWSKI", 195, currentY + 4, { align: 'right' });
+      
+      // WYKORZYSTANIE NAZWY UŻYTKOWNIKA Z EMAILA
+      const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
+      doc.text(displayName, 195, currentY + 4, { align: 'right' });
+      
       doc.setTextColor(71, 85, 105);
       doc.setFontSize(6);
       doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
@@ -1018,10 +1035,12 @@ const OfertyModule = ({ user }) => {
 
             <div className="flex items-center gap-3">
                 <div className="hidden sm:block text-right">
-                  <p className="text-[10px] font-black text-[#0067b1] uppercase tracking-widest tracking-tight">Jakub Cendrowski</p>
+                  <p className="text-[10px] font-black text-[#0067b1] uppercase tracking-widest tracking-tight">{user ? getUserDisplayName(user.email) : "Jakub Cendrowski"}</p>
                   <p className="text-[9px] text-slate-500 uppercase font-bold">Menedżer Sprzedaży</p>
                 </div>
-                <div className="w-10 h-10 bg-[#0067b1] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-inner uppercase border-4 border-white"> JC </div>
+                <div className="w-10 h-10 bg-[#0067b1] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-inner uppercase border-4 border-white">
+                  {user && user.email ? (user.email.charAt(0) + (user.email.split('.')[1] ? user.email.split('.')[1].charAt(0) : '')).toUpperCase() : 'JC'}
+                </div>
             </div>
           </div>
 
@@ -1368,7 +1387,7 @@ const OfertyModule = ({ user }) => {
 
           <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
              <div className="max-w-7xl mx-auto flex justify-between items-center">
-               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v7.9 (Reverted Header & Unified Logo)</span>
+               <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v8.0</span>
                <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
              </div>
           </footer>
@@ -1563,9 +1582,9 @@ export default function App() {
                 docPdf.addFont(filename, fontName, fontStyle);
             } catch (e) { console.error(e); }
         };
-        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
         await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
+        await loadFont('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
         const palladaBlue = [0, 103, 177]; 
         const slate500 = [100, 116, 139]; 
         const slate400 = [148, 163, 184]; 
@@ -1929,7 +1948,7 @@ export default function App() {
             </div>
             {isSidebarOpen && (
               <div className="overflow-hidden">
-                <p className="text-xs font-black text-slate-800 truncate">Bartek Żochowski</p>
+                <p className="text-xs font-black text-slate-800 truncate">{user ? getUserDisplayName(user.email) : "Bartek Żochowski"}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Administrator</p>
               </div>
             )}
