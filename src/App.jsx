@@ -58,7 +58,8 @@ import {
   Scale,
   FilePlus,
   Fingerprint,
-  Wrench
+  Wrench,
+  Calendar
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
@@ -387,7 +388,7 @@ const OfertyModule = ({ user }) => {
     numerOferty: `OFR/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
     dataKalkulacji: new Date().toLocaleDateString('pl-PL'),
     klient: { nazwa: "", czyLeasing: false, wlasciciel: "", typ: "Prywatny" },
-    pojazd: { marka: "", model: "", nrRejestracyjny: "", vin: "" },
+    pojazd: { marka: "", model: "", rokProdukcji: "", nrRejestracyjny: "", vin: "" },
     warianty: []
   });
 
@@ -445,7 +446,7 @@ const OfertyModule = ({ user }) => {
           }
       };
       
-      // Ładowanie czcionek używając Cache (jeśli raz pobrano, więcej nie trzeba pytać sieci)
+      // Ładowanie czcionek używając Cache
       await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
       await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
       await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
@@ -472,7 +473,7 @@ const OfertyModule = ({ user }) => {
           }
       }
 
-      // Ładowanie Loga Pallada przy użyciu Cache
+      // Ładowanie Loga Pallada
       if (!pdfAssetsCache.mainLogo) {
           await new Promise((resolve) => {
               const img = new Image();
@@ -559,7 +560,7 @@ const OfertyModule = ({ user }) => {
       currentY += 6;
       drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, oferta.klient.czyLeasing ? "Właściciel:" : "", oferta.klient.czyLeasing ? oferta.klient.wlasciciel : "", currentY);
       currentY += 6;
-      drawMetaRow("VIN:", oferta.pojazd.vin, "", "", currentY);
+      drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
       currentY += 14;
 
       // 3. Warianty - Rysowanie tabeli
@@ -1126,13 +1127,19 @@ const OfertyModule = ({ user }) => {
                       <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.model} onChange={(e) => handleInputChange('pojazd', 'model', e.target.value, formatTitleCaseOferty)} />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Numer Rejestracyjny</label>
-                    <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rok produkcji</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nr Rejestracyjny</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Fingerprint size={12} className="text-[#0067b1]"/> Numer VIN</label>
-                    <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} placeholder="Wpisz 17 znaków VIN" />
+                    <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} />
                   </div>
                 </div>
               </section>
@@ -1166,7 +1173,7 @@ const OfertyModule = ({ user }) => {
                     <div className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building2 size={16} className="text-[#0067b1]"/> Towarzystwo</label>
-                        <select className="w-full px-5 py-4.5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
+                        <select className="w-full px-5 py-5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
                           {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </div>
@@ -1175,8 +1182,8 @@ const OfertyModule = ({ user }) => {
                         <div className="space-y-3 relative">
                           <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
                           <div className="relative">
-                            <input type="text" className={`w-full pl-6 pr-36 py-4.5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
-                            <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
+                            <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
+                            <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
                           </div>
                         </div>
                       )}
@@ -1184,8 +1191,8 @@ const OfertyModule = ({ user }) => {
                       <div className="space-y-2 relative">
                         <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
                         <div className="relative">
-                          <input type="text" className={`w-full pl-6 pr-36 py-4.5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
-                          <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-lg tracking-widest">PLN</span>
+                          <input type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
+                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-sm tracking-widest">PLN</span>
                         </div>
                         <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
                           {[1, 2, 4, 12].map(raty => (
@@ -1218,9 +1225,9 @@ const OfertyModule = ({ user }) => {
                         <div className="space-y-4">
                           <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
                           
-                          <div className={`grid grid-cols-3 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
-                            {['Kosztorys', 'Partnerski', 'ASO'].map(metoda => (
-                              <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[9px] xs:text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1]'}`}> {metoda} </button>
+                          <div className={`grid grid-cols-2 lg:grid-cols-4 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
+                            {['Kosztorys', 'Minicasco', 'Partnerski', 'ASO'].map(metoda => (
+                              <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}> {metoda} </button>
                             ))}
                           </div>
 
