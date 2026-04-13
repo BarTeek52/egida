@@ -42,6 +42,7 @@ import {
   ArrowUpRight,
   MapPin,
   Trash2,
+  Edit2,
   Car,
   ShieldCheck,
   Save,
@@ -398,6 +399,8 @@ const OfertyModule = ({ user }) => {
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
   
+  const konfiguratorRef = useRef(null);
+
   const [errors, setErrors] = useState({ skladka: false, suma: false, metodaNaprawy: false });
   const [validationError, setValidationError] = useState("");
   
@@ -1010,6 +1013,15 @@ const OfertyModule = ({ user }) => {
     setExpandedDodatek(null);
   };
 
+  const edytujWariant = (wariantDoEdycji) => {
+    setNowyWariant(wariantDoEdycji);
+    setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== wariantDoEdycji.id)}));
+    setExpandedDodatek(null);
+    if (konfiguratorRef.current) {
+      konfiguratorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const zapiszWBazie = async () => {
     if (!user || oferta.warianty.length === 0) return;
     setSaving(true);
@@ -1182,7 +1194,7 @@ const OfertyModule = ({ user }) => {
                 <section className="bg-white rounded-[2.5rem] p-10 shadow-xl border-t-8 border-[#0067b1] relative overflow-hidden shadow-slate-200/60">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
                     
-                    <div className="md:col-span-5 space-y-8">
+                    <div className="md:col-span-5 space-y-8" ref={konfiguratorRef}>
                       <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 shadow-inner">
                         {['OC', 'OC+AC', 'AC'].map(id => (
                           <button 
@@ -1400,7 +1412,10 @@ const OfertyModule = ({ user }) => {
                   {oferta.warianty.map(w => (
                     <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
                       <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 relative flex flex-col items-center justify-center text-center">
-                        <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="absolute top-5 right-5 text-slate-300 hover:text-red-500 p-2.5 bg-white shadow-sm rounded-full active:scale-95 transition-all"> <Trash2 size={18} /> </button>
+                        <div className="absolute top-5 right-5 flex gap-1.5">
+                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-2.5 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={18} /> </button>
+                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-2.5 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={18} /> </button>
+                        </div>
                         <div className="h-10 flex items-center justify-center mb-3">
                           <CompanyLogo firma={w.firma} />
                         </div>
