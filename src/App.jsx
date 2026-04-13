@@ -197,22 +197,21 @@ const KLAUZULE_HESTIA_BAZA = {
 };
 
 // --- KONFIGURACJA DODATKÓW PER FIRMA (OFERTOWANIE) ---
+// Nowa, rygorystyczna kolejność: NNW, Assistance, Szyby, Ochrona OC, Ochrona AC, Klauzule, Bagaż, Ochrona Prawna.
 const DODATKI_KONFIG = {
   "PZU S.A.": [
-    { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "ass", label: "Assistance", icon: Zap },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ass", label: "Assistance", icon: Zap }
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
   ],
   "Ergo Hestia": [
-    { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
-    { id: "bagaz", label: "Bagaż", icon: Briefcase },
+    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
     { id: "car_ass", label: "Assistance", icon: Zap, options: ["Wypadek", "Wypadek i Awaria", "Turbo"] },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_prawna", label: "Ochrona Prawna", icon: Scale },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
     { 
       id: "klauzule_katalog", label: "Katalog Klauzul", icon: FilePlus, 
       getMultiOptions: (tryb) => {
@@ -220,15 +219,16 @@ const DODATKI_KONFIG = {
         if (tryb === 'AC') return KLAUZULE_HESTIA_BAZA.AC;
         return KLAUZULE_HESTIA_BAZA.OC_AC;
       }
-    }
+    },
+    { id: "bagaz", label: "Bagaż", icon: Briefcase },
+    { id: "ochrona_prawna", label: "Ochrona Prawna", icon: Scale }
   ],
   "Ergo Biznes": [
-    { id: "nnw", label: "NNW Biznes", icon: UserPlus },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw", label: "NNW Biznes", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
     { id: "car_ass", label: "Assistance Biznes", icon: Zap, options: ["Biznes (Polska)", "Biznes (Europa 200km)", "Biznes (Europa 500km)", "Biznes (Europa 1000km)"] },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
     { 
       id: "klauzule_katalog_biznes", label: "Katalog Klauzul Biznes", icon: FilePlus, 
       getMultiOptions: (tryb) => {
@@ -236,27 +236,28 @@ const DODATKI_KONFIG = {
         if (tryb === 'AC') return KLAUZULE_HESTIA_BAZA.AC;
         return KLAUZULE_HESTIA_BAZA.OC_AC;
       }
-    }
+    },
+    { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale }
   ],
   "Warta": [
-    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
   ],
   "Link4": [
-    { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "szyby", label: "Szyby 24", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Auto Assistance", icon: Zap },
     { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car },
+    { id: "szyby", label: "Szyby 24", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
   ],
   "Default": [
-    { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Assistance", icon: Zap },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
   ]
@@ -795,7 +796,9 @@ const OfertyModule = ({ user }) => {
 
               if (w.tryb !== 'AC') drawCheckReal("Ubezpieczenie OC");
               if (w.tryb !== 'OC') drawCheckReal("Autocasco (AC)");
-              if (w.dodatki['nnw']) drawCheckReal("Następstwa (NNW)");
+              if (w.dodatki['nnw']) {
+                  drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
+              }
               if (w.dodatki['ass'] || w.dodatki['car_ass']) drawCheckReal("Assistance");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
 
@@ -1108,10 +1111,8 @@ const OfertyModule = ({ user }) => {
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          {/* NOWY UKŁAD Z WARIANTAMI NA CAŁĄ SZEROKOŚĆ (OD LEWEJ STRONY) */}
           <div className="flex flex-col gap-10">
             
-            {/* GÓRNA SEKCJA FORMULARZY */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
               
               <div className="lg:col-span-4 space-y-6">
@@ -1369,11 +1370,9 @@ const OfertyModule = ({ user }) => {
               </div>
             </div>
 
-            {/* PEŁNOSZEROKOŚCIOWA SEKCJA WARIANTÓW (STARTUJE OD SAMEJ LEWEJ KRAWĘDZI) */}
             {oferta.warianty.length > 0 && (
               <div className="w-full mt-4 animate-in fade-in slide-in-from-bottom-8">
                 
-                {/* NAGŁÓWEK Z PRZYCISKAMI AKCJI */}
                 <div className="flex flex-col md:flex-row items-center justify-between border-b border-slate-200 pb-5 mb-8 gap-6">
                   <h2 className="text-[13px] font-black uppercase tracking-[0.2em] text-[#0067b1] flex items-center gap-3 ml-2">
                     <Layers size={22} /> Przygotowane Warianty ({oferta.warianty.length})
@@ -1388,7 +1387,6 @@ const OfertyModule = ({ user }) => {
                   </div>
                 </div>
 
-                {/* KARUZELA KART */}
                 <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
                   {oferta.warianty.map(w => (
                     <div key={w.id} className="w-[85vw] sm:w-[350px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
@@ -1429,7 +1427,7 @@ const OfertyModule = ({ user }) => {
                               }
 
                               const label = dKonfig ? dKonfig.label : id;
-                              const displayVal = (typeof val === 'string' && val !== 'true') ? `${label}: ${val}` : label;
+                              const displayVal = (typeof val === 'string' && val !== 'true') ? (id === 'nnw' ? `NNW: ${val}` : `${label}: ${val}`) : label;
                               return (
                                 <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
                                   {displayVal}
