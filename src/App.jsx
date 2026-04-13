@@ -351,7 +351,7 @@ const LoginScreen = ({ onLogin, error }) => {
                         <Shield size={40} />
                     </div>
                     <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter" style={styles.header}>Egida</h1>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Panel Agenta Pallada</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Panel Agenta</p>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1">
@@ -1265,11 +1265,11 @@ const OfertyModule = ({ user }) => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
-                                <Activity size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest text-center">Stała wartość<br/>pojazdu</span>
+                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-row items-center justify-center px-4 py-3 rounded-2xl border-2 transition-all gap-2 h-12 group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-sm' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                                <Activity size={16} /> <span className="text-[9px] font-black uppercase tracking-widest text-center truncate">Stała wartość pojazdu</span>
                               </button>
-                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-col items-center justify-center p-2 rounded-[2rem] border-2 transition-all gap-1.5 h-20 group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
-                                <ShieldCheck size={20} /> <span className="text-[9px] font-black uppercase leading-tight tracking-widest text-center">Brak redukcji<br/>sumy</span>
+                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-row items-center justify-center px-4 py-3 rounded-2xl border-2 transition-all gap-2 h-12 group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-sm' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                                <ShieldCheck size={16} /> <span className="text-[9px] font-black uppercase tracking-widest text-center truncate">Brak redukcji sumy</span>
                               </button>
                             </div>
                           </div>
