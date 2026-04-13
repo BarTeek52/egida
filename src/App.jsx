@@ -197,7 +197,6 @@ const KLAUZULE_HESTIA_BAZA = {
 };
 
 // --- KONFIGURACJA DODATKÓW PER FIRMA (OFERTOWANIE) ---
-// Nowa, rygorystyczna kolejność: NNW, Assistance, Szyby, Ochrona OC, Ochrona AC, Klauzule, Bagaż, Ochrona Prawna.
 const DODATKI_KONFIG = {
   "PZU S.A.": [
     { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
@@ -249,10 +248,10 @@ const DODATKI_KONFIG = {
   "Link4": [
     { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Auto Assistance", icon: Zap },
-    { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car },
     { id: "szyby", label: "Szyby 24", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car }
   ],
   "Default": [
     { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
@@ -918,6 +917,16 @@ const OfertyModule = ({ user }) => {
       doc.setTextColor(71, 85, 105);
       doc.setFontSize(6);
       doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
+
+      // DODANA: NUMERACJA STRON NA KAŻDEJ STRONIE
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          doc.setFontSize(7);
+          doc.setTextColor(...slate400); 
+          doc.setFont(getFont("Kiro"), "normal");
+          doc.text(`Strona ${i} z ${totalPages}`, 105, 290, { align: 'center' });
+      }
 
       // Zapis PDF
       doc.save(`Oferta_${oferta.numerOferty.replace(/\//g, '_')}.pdf`);
