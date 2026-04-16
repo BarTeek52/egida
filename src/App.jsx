@@ -240,11 +240,20 @@ const DODATKI_KONFIG = {
     { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale }
   ],
   "Warta": [
-    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "nnw", label: "NNW", icon: UserPlus },
     { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] }
+  ],
+  "HDI": [
+    { id: "nnw", label: "NNW", icon: UserPlus },
+    { id: "ass", label: "Assistance", icon: Zap },
+    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] }
   ],
   "Link4": [
     { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
