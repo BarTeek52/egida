@@ -240,12 +240,14 @@ const DODATKI_KONFIG = {
     { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale }
   ],
   "Warta": [
+    { id: "pakiet_ac", label: "Wariant Autocasco", icon: ShieldCheck, options: ["Warta Komfort", "Warta Standard"], showIn: ['AC', 'OC+AC'] },
+    { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
+    { id: "wykup_udzialu", label: "Wykup udziału (Standard)", icon: CheckSquare, showIn: ['AC', 'OC+AC'] },
     { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap },
+    { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
-    { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] }
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
   ],
   "HDI": [
     { id: "nnw", label: "NNW", icon: UserPlus },
@@ -641,7 +643,7 @@ const OfertyModule = ({ user }) => {
               if (w.tryb !== 'AC') addC2();
               if (w.tryb !== 'OC') addC2();
               if (w.dodatki['nnw']) addC2();
-              if (w.dodatki['ass'] || w.dodatki['car_ass']) addC2();
+              if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) addC2();
               if (w.dodatki['szyby']) addC2();
               if (c2Y_sim > simMaxY) simMaxY = c2Y_sim;
 
@@ -654,10 +656,11 @@ const OfertyModule = ({ user }) => {
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) addC3("Brak redukcji sumy ubezpieczenia");
               if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(`Naprawa: ${w.zakresAC.metodaNaprawy}`);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') addC3(`Assistance: ${w.dodatki['car_ass']}`);
+              if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') addC3(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') addC3(`Szyby: ${w.dodatki['szyby']}`);
               
               Object.entries(w.dodatki).forEach(([id, val]) => {
-                  if (!val || ['nnw', 'ass', 'car_ass', 'szyby'].includes(id)) return;
+                  if (!val || ['nnw', 'ass', 'car_ass', 'szyby', 'warta_pomoc'].includes(id)) return;
                   const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
                   const label = dKonfig ? dKonfig.label : id;
                   if (Array.isArray(val)) {
@@ -810,7 +813,7 @@ const OfertyModule = ({ user }) => {
               if (w.dodatki['nnw']) {
                   drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
               }
-              if (w.dodatki['ass'] || w.dodatki['car_ass']) drawCheckReal("Assistance");
+              if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
 
               // ==========================================
@@ -834,10 +837,11 @@ const OfertyModule = ({ user }) => {
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) drawBulletReal("Brak redukcji sumy ubezpieczenia");
               if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(`Naprawa: ${w.zakresAC.metodaNaprawy}`);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['car_ass']}`);
+              if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') drawBulletReal(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') drawBulletReal(`Szyby: ${w.dodatki['szyby']}`);
 
               Object.entries(w.dodatki).forEach(([id, val]) => {
-                  if (!val || ['nnw', 'ass', 'car_ass', 'szyby'].includes(id)) return;
+                  if (!val || ['nnw', 'ass', 'car_ass', 'szyby', 'warta_pomoc'].includes(id)) return;
                   const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
                   const label = dKonfig ? dKonfig.label : id;
                   if (Array.isArray(val)) {
@@ -1420,15 +1424,17 @@ const OfertyModule = ({ user }) => {
                 <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
                   {oferta.warianty.map(w => (
                     <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
-                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 relative flex flex-col items-center justify-center text-center">
-                        <div className="absolute top-5 right-5 flex gap-1.5">
-                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-2.5 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={18} /> </button>
-                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-2.5 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={18} /> </button>
+                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{w.firma}</h3>
+                          <div className="flex gap-2">
+                            <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
+                          </div>
                         </div>
-                        <div className="h-10 flex items-center justify-center mb-3">
-                          <CompanyLogo firma={w.firma} />
+                        <div className="flex gap-1.5">
+                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={20} /> </button>
+                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={20} /> </button>
                         </div>
-                        <span className="text-[8px] font-black px-4 py-1.5 bg-[#0067b1] text-white rounded-full uppercase tracking-widest shadow-sm">{w.tryb}</span>
                       </div>
                       <div className="p-8 flex-1 flex flex-col justify-between bg-white">
                         <div className="space-y-4">
@@ -1635,7 +1641,6 @@ export default function App() {
     return `${base} ${status}`;
   };
 
-  // Zoptymalizowane generowanie Wypowiedzenia - używa tego samego Cache!
   const handleGenerateAndSave = async () => {
     const requiredFields = [
         'imieNazwisko', 'ulica', 'kodPocztowy', 'miejscowosc', 
