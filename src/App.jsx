@@ -240,9 +240,7 @@ const DODATKI_KONFIG = {
     { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale }
   ],
   "Warta": [
-    { id: "pakiet_ac", label: "Wariant Autocasco", icon: ShieldCheck, options: ["Warta Komfort", "Warta Standard"], showIn: ['AC', 'OC+AC'] },
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
-    { id: "wykup_udzialu", label: "Wykup udziału (Standard)", icon: CheckSquare, showIn: ['AC', 'OC+AC'] },
     { id: "nnw", label: "NNW", icon: UserPlus },
     { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
@@ -431,7 +429,7 @@ const OfertyModule = ({ user }) => {
     sumaUbezpieczenia: "", 
     typSumy: "Brutto", 
     tryb: "OC+AC",
-    zakresAC: { stalaSuma: false, nieredukcyjna: false, metodaNaprawy: "" },
+    zakresAC: { stalaSuma: false, nieredukcyjna: false, metodaNaprawy: "", wariantWarta: "Komfort" },
     dodatki: {},
     liczbaRat: 1
   });
@@ -635,6 +633,11 @@ const OfertyModule = ({ user }) => {
               const w = oferta.warianty[i];
               let startY = currentY;
               
+              let naprawaTxt = `Naprawa: ${w.zakresAC?.metodaNaprawy || ''}`;
+              if (w.firma === 'Warta' && w.zakresAC?.metodaNaprawy === 'ASO' && w.zakresAC?.wariantWarta) {
+                  naprawaTxt = `Naprawa: ASO (Warta ${w.zakresAC.wariantWarta})`;
+              }
+
               // --- KROK 1: SYMULACJA WYSOKOŚCI --- 
               let simMaxY = startY + 36; 
               
@@ -654,7 +657,7 @@ const OfertyModule = ({ user }) => {
               };
               if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) addC3("Auto wartość 100% (stała suma)");
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) addC3("Brak redukcji sumy ubezpieczenia");
-              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(`Naprawa: ${w.zakresAC.metodaNaprawy}`);
+              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(naprawaTxt);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') addC3(`Assistance: ${w.dodatki['car_ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') addC3(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') addC3(`Szyby: ${w.dodatki['szyby']}`);
@@ -835,7 +838,7 @@ const OfertyModule = ({ user }) => {
 
               if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) drawBulletReal("Auto wartość 100% (stała suma)");
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) drawBulletReal("Brak redukcji sumy ubezpieczenia");
-              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(`Naprawa: ${w.zakresAC.metodaNaprawy}`);
+              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(naprawaTxt);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['car_ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') drawBulletReal(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') drawBulletReal(`Szyby: ${w.dodatki['szyby']}`);
@@ -1285,11 +1288,50 @@ const OfertyModule = ({ user }) => {
                             
                             <div className={`grid grid-cols-2 lg:grid-cols-4 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
                               {['Kosztorys', 'Minicasco', 'Partnerski', 'ASO'].map(metoda => (
-                                <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}> {metoda} </button>
+                                <button 
+                                  key={metoda} 
+                                  onClick={() => setNowyWariant({
+                                    ...nowyWariant, 
+                                    zakresAC: {
+                                      ...nowyWariant.zakresAC, 
+                                      metodaNaprawy: metoda,
+                                      wariantWarta: (nowyWariant.firma === 'Warta' && metoda === 'ASO') ? (nowyWariant.zakresAC.wariantWarta || 'Komfort') : ''
+                                    }
+                                  })} 
+                                  className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
+                                > 
+                                  {metoda} 
+                                </button>
                               ))}
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* WARTA ASO - DODATKOWY WYBÓR WARIANTU */}
+                            {nowyWariant.firma === 'Warta' && nowyWariant.zakresAC.metodaNaprawy === 'ASO' && (
+                              <div className="animate-in fade-in slide-in-from-top-2">
+                                <div className="flex gap-2 p-1.5 bg-blue-50/80 rounded-2xl border border-blue-100 shadow-inner">
+                                  <button 
+                                    onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Standard'}})} 
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Standard' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
+                                  > 
+                                    <ShieldAlert size={14} /> Warta Standard
+                                  </button>
+                                  <button 
+                                    onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Komfort'}})} 
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Komfort' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
+                                  > 
+                                    <ShieldCheck size={14} /> Warta Komfort
+                                  </button>
+                                </div>
+                                <div className="mt-2.5 text-[9px] font-bold text-[#0067b1]/70 uppercase tracking-widest text-center px-2 flex items-center justify-center gap-1.5">
+                                  <Activity size={12} />
+                                  {nowyWariant.zakresAC.wariantWarta === 'Komfort' 
+                                    ? "Zniesiony udział własny dla młodych kierowców (Brak potrąceń)." 
+                                    : "Udział własny 10% przy młodych kierowcach (aby wykupić zaznacz podwyższone ryzyko)."}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                               <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
                                 <Activity size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Stała wartość pojazdu</span>
                               </button>
@@ -1447,7 +1489,13 @@ const OfertyModule = ({ user }) => {
                           <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Odpowiedzialność OC</span> {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
                           <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Autocasco (AC)</span> {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
                           <div className="flex flex-wrap gap-2 mt-6">
-                            {w.tryb !== 'OC' && <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1"><Wrench size={10} /> {w.zakresAC.metodaNaprawy}</span>}
+                            {w.tryb !== 'OC' && (
+                              <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1">
+                                <Wrench size={10} /> 
+                                {w.zakresAC.metodaNaprawy}
+                                {w.firma === 'Warta' && w.zakresAC.metodaNaprawy === 'ASO' && w.zakresAC.wariantWarta ? ` (${w.zakresAC.wariantWarta})` : ''}
+                              </span>
+                            )}
                             {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1"><Activity size={10} /> Stała Wartość</span>}
                             {Object.entries(w.dodatki).map(([id, val]) => {
                               if (!val || (Array.isArray(val) && val.length === 0)) return null;
