@@ -60,7 +60,7 @@ import {
   FilePlus,
   Fingerprint,
   Wrench,
-  Award
+  Calendar
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
@@ -240,7 +240,9 @@ const DODATKI_KONFIG = {
     { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale }
   ],
   "Warta": [
+    { id: "pakiet_ac", label: "Wariant Autocasco", icon: ShieldCheck, options: ["Warta Komfort", "Warta Standard"], showIn: ['AC', 'OC+AC'] },
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
+    { id: "wykup_udzialu", label: "Wykup udziału (Standard)", icon: CheckSquare, showIn: ['AC', 'OC+AC'] },
     { id: "nnw", label: "NNW", icon: UserPlus },
     { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
     { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
@@ -382,6 +384,24 @@ const LoginScreen = ({ onLogin, error }) => {
     );
 };
 
+// --- KOMPONENT: DYNAMICZNE LOGO FIRMY Z FALLBACKIEM NA TEKST ---
+const CompanyLogo = ({ firma }) => {
+  const [imgError, setImgError] = useState(false);
+  const src = LOGOS[firma];
+
+  if (src && !imgError) {
+    return (
+      <img 
+        src={src} 
+        alt={firma} 
+        className="max-h-8 max-w-[130px] object-contain object-center mix-blend-multiply transition-opacity duration-300" 
+        onError={() => setImgError(true)} 
+      />
+    );
+  }
+  return <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em] text-center">{firma}</h3>;
+};
+
 
 // --- MODUŁ OFERTOWANIA (NATYWNY PDF) ---
 const OfertyModule = ({ user }) => {
@@ -389,7 +409,6 @@ const OfertyModule = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
-  const [pdfLoadingMessage, setPdfLoadingMessage] = useState("Generowanie PDF...");
   
   const konfiguratorRef = useRef(null);
 
@@ -397,10 +416,6 @@ const OfertyModule = ({ user }) => {
   const [validationError, setValidationError] = useState("");
   
   const [expandedDodatek, setExpandedDodatek] = useState(null);
-
-  // DODANE: Stan zakładki wewnątrz ofert
-  const [kategoriaOferty, setKategoriaOferty] = useState('Komunikacja');
-  const KATEGORIE = ['Komunikacja', 'Mieszkania', 'Domy', 'Podróż', 'Ubezpieczenie rezygnacji z podróży'];
 
   const [oferta, setOferta] = useState({
     numerOferty: `OFR/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
@@ -416,7 +431,7 @@ const OfertyModule = ({ user }) => {
     sumaUbezpieczenia: "", 
     typSumy: "Brutto", 
     tryb: "OC+AC",
-    zakresAC: { stalaSuma: false, nieredukcyjna: false, metodaNaprawy: "", wariantWarta: "Komfort" },
+    zakresAC: { stalaSuma: false, nieredukcyjna: false, metodaNaprawy: "" },
     dodatki: {},
     liczbaRat: 1
   });
@@ -439,225 +454,149 @@ const OfertyModule = ({ user }) => {
     }
   }, [user]);
 
-
-  // FUNKCJA WSPOMAGAJĄCA ŁADOWANIE ZASOBÓW DO PDF
-  const preparePdfAssets = async (doc, specificFirms = null) => {
-    const loadFontWithCache = async (url, filename, fontName, fontStyle) => {
-        if (!pdfAssetsCache.fonts[filename]) {
-            try {
-                const response = await fetch(url);
-                const buffer = await response.arrayBuffer();
-                let binary = '';
-                const bytes = new Uint8Array(buffer);
-                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                pdfAssetsCache.fonts[filename] = window.btoa(binary);
-            } catch (e) { console.error("Błąd ładowania czcionki", e); }
-        }
-        if (pdfAssetsCache.fonts[filename]) {
-            doc.addFileToVFS(filename, pdfAssetsCache.fonts[filename]);
-            doc.addFont(filename, fontName, fontStyle);
-        }
-    };
-    
-    await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
-    await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
-    await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
-
-    let firmsToLoad = specificFirms || [...new Set(oferta.warianty.map(w => w.firma))];
-    const preloadedLogos = {};
-    
-    for (const firma of firmsToLoad) {
-        if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
-            await new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.onload = () => {
-                    pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
-                    resolve();
-                };
-                img.onerror = resolve; 
-                img.src = LOGOS[firma];
-            });
-        }
-        if (pdfAssetsCache.logos[firma]) {
-            preloadedLogos[firma] = pdfAssetsCache.logos[firma];
-        }
-    }
-
-    if (!pdfAssetsCache.mainLogo) {
-        await new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => {
-                pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
-                resolve();
-            };
-            img.onerror = resolve;
-            img.src = pallada_trans_logo;
-        });
-    }
-
-    return preloadedLogos;
-  }
-
-  // WSPÓLNA FUNKCJA RYSUJĄCA NAGŁÓWEK
-  const drawStandardHeader = (doc, titleText) => {
-    const palladaBlue = [0, 103, 177];
-    const slate800 = [30, 41, 59];
-    const slate500 = [100, 116, 139];
-    const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
-
-    if (pdfAssetsCache.mainLogo) {
-        const ml = pdfAssetsCache.mainLogo;
-        doc.addImage(ml.img, 'PNG', 15, 15, 28 * ml.ratio, 28, undefined, 'FAST');
-    } else {
-        doc.setFont(getFont("Semplicita"), "bold");
-        doc.setFontSize(22);
-        doc.setTextColor(...palladaBlue);
-        doc.text("PALLADA", 15, 28);
-    }
-
-    doc.setFont(getFont("Kiro"), "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(...slate800);
-    doc.text(titleText, 195, 20, { align: 'right' });
-    
-    doc.setFontSize(7);
-    doc.setTextColor(...slate500);
-    doc.setFont(getFont("Kiro"), "normal");
-    doc.text(`Nr kalkulacji:`, 155, 26, { align: 'right' });
-    doc.setFont(getFont("Kiro"), "bold");
-    doc.setTextColor(...slate800);
-    doc.text(oferta.numerOferty, 195, 26, { align: 'right' });
-
-    doc.setFont(getFont("Kiro"), "normal");
-    doc.setTextColor(...slate500);
-    doc.text(`Data kalkulacji:`, 155, 30, { align: 'right' });
-    doc.setFont(getFont("Kiro"), "bold");
-    doc.setTextColor(...slate800);
-    doc.text(oferta.dataKalkulacji, 195, 30, { align: 'right' });
-
-    doc.setDrawColor(...palladaBlue);
-    doc.setLineWidth(0.6);
-    doc.line(15, 45, 195, 45);
-  };
-
-  // WSPÓLNA FUNKCJA RYSUJĄCA DANE POJAZDU/KLIENTA
-  const drawMetadata = (doc, currentY) => {
-    const slate800 = [30, 41, 59];
-    const slate400 = [148, 163, 184];
-    const slate200 = [226, 232, 240];
-    const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
-
-    const drawMetaRow = (label, value, label2, value2, y) => {
-        doc.setDrawColor(...slate200);
-        doc.setLineWidth(0.2);
-        doc.line(15, y + 2, 195, y + 2);
-        
-        doc.setFontSize(8);
-        doc.setFont(getFont("Kiro"), "bold");
-        doc.setTextColor(...slate400);
-        doc.text(label, 15, y);
-        doc.setFont(getFont("Kiro"), "bold");
-        doc.setTextColor(...slate800);
-        doc.text((value || '-').toUpperCase(), 45, y);
-        
-        if (label2) {
-            doc.setFont(getFont("Kiro"), "bold");
-            doc.setTextColor(...slate400);
-            doc.text(label2, 105, y);
-            doc.setFont(getFont("Kiro"), "bold");
-            doc.setTextColor(...slate800);
-            doc.text((value2 || '-').toUpperCase(), 130, y);
-        }
-    };
-
-    drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, "Ubezpieczony:", oferta.klient.nazwa, currentY);
-    currentY += 6;
-    drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, oferta.klient.czyLeasing ? "Właściciel:" : "", oferta.klient.czyLeasing ? oferta.klient.wlasciciel : "", currentY);
-    currentY += 6;
-    drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
-    currentY += 14;
-
-    return currentY;
-  };
-
-  // WSPÓLNA FUNKCJA RYSUJĄCA STOPKĘ
-  const drawStandardFooter = (doc, currentY, withPageNumbers = true) => {
-    const palladaBlue = [0, 103, 177];
-    const slate800 = [30, 41, 59];
-    const slate500 = [100, 116, 139];
-    const slate400 = [148, 163, 184];
-    const slate200 = [226, 232, 240];
-    const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
-
-    if (currentY > 250) {
-        doc.addPage();
-        currentY = 20;
-    }
-    
-    currentY += 10;
-    doc.setDrawColor(...slate200);
-    doc.setLineWidth(0.2);
-    doc.line(15, currentY, 195, currentY);
-    
-    currentY += 6;
-    doc.setTextColor(...slate800);
-    doc.setFontSize(6);
-    doc.setFont(getFont("Kiro"), "bold");
-    doc.text("INFORMACJA PRAWNA", 15, currentY);
-    doc.setTextColor(...slate500);
-    doc.setFont(getFont("Kiro"), "normal");
-    doc.text("Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji", 15, currentY + 4);
-    doc.text("historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.", 15, currentY + 7);
-
-    doc.setTextColor(...slate400);
-    doc.setFontSize(5);
-    doc.setFont(getFont("Kiro"), "bold");
-    doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
-    doc.setTextColor(...palladaBlue);
-    doc.setFontSize(10);
-    
-    const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
-    doc.text(displayName, 195, currentY + 4, { align: 'right' });
-    
-    doc.setTextColor(71, 85, 105);
-    doc.setFontSize(6);
-    doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
-
-    if (withPageNumbers) {
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            doc.setFontSize(7);
-            doc.setTextColor(...slate400); 
-            doc.setFont(getFont("Kiro"), "normal");
-            doc.text(`Strona ${i} z ${totalPages}`, 105, 290, { align: 'center' });
-        }
-    }
-  };
-
-
-  // --- GENERATOR ZESTAWIENIA WSZYSTKICH OFERT (GŁÓWNY) ---
+  // LOGIKA NATYWNEGO GENEROWANIA PDF W JSPDF + ZAAWANSOWANY CACHE
   const handleGeneratePdfNative = async () => {
     setPdfMode(true);
-    setPdfLoadingMessage("Generowanie zestawienia ofert...");
     try {
       await loadJsPdfScript();
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      const preloadedLogos = await preparePdfAssets(doc);
-      const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
+      const loadFontWithCache = async (url, filename, fontName, fontStyle) => {
+          if (!pdfAssetsCache.fonts[filename]) {
+              try {
+                  const response = await fetch(url);
+                  const buffer = await response.arrayBuffer();
+                  let binary = '';
+                  const bytes = new Uint8Array(buffer);
+                  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                  pdfAssetsCache.fonts[filename] = window.btoa(binary);
+              } catch (e) { console.error("Błąd ładowania czcionki", e); }
+          }
+          if (pdfAssetsCache.fonts[filename]) {
+              doc.addFileToVFS(filename, pdfAssetsCache.fonts[filename]);
+              doc.addFont(filename, fontName, fontStyle);
+          }
+      };
+      
+      // Ładowanie czcionek używając Cache
+      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
+      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
+      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
+
+      // Ładowanie logotypów Towarzystw przy użyciu Cache
+      const uniqueFirms = [...new Set(oferta.warianty.map(w => w.firma))];
+      const preloadedLogos = {};
+      
+      for (const firma of uniqueFirms) {
+          if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
+              await new Promise((resolve) => {
+                  const img = new Image();
+                  img.crossOrigin = "Anonymous";
+                  img.onload = () => {
+                      pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
+                      resolve();
+                  };
+                  img.onerror = resolve; // Ignoruj jeśli błąd
+                  img.src = LOGOS[firma];
+              });
+          }
+          if (pdfAssetsCache.logos[firma]) {
+              preloadedLogos[firma] = pdfAssetsCache.logos[firma];
+          }
+      }
+
+      // Ładowanie Loga Pallada
+      if (!pdfAssetsCache.mainLogo) {
+          await new Promise((resolve) => {
+              const img = new Image();
+              img.crossOrigin = "Anonymous";
+              img.onload = () => {
+                  pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
+                  resolve();
+              };
+              img.onerror = resolve;
+              img.src = pallada_trans_logo;
+          });
+      }
+
       const palladaBlue = [0, 103, 177];
       const slate800 = [30, 41, 59];
+      const slate500 = [100, 116, 139];
       const slate400 = [148, 163, 184];
+      const slate200 = [226, 232, 240];
       const blue50 = [239, 246, 255];
+      const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
 
-      drawStandardHeader(doc, "PROPOZYCJA UBEZPIECZENIA POJAZDU");
-      let currentY = drawMetadata(doc, 52);
+      // 1. Logo i nagłówek
+      if (pdfAssetsCache.mainLogo) {
+          const ml = pdfAssetsCache.mainLogo;
+          doc.addImage(ml.img, 'PNG', 15, 15, 28 * ml.ratio, 28, undefined, 'FAST');
+      } else {
+          doc.setFont(getFont("Semplicita"), "bold");
+          doc.setFontSize(22);
+          doc.setTextColor(...palladaBlue);
+          doc.text("PALLADA", 15, 28);
+      }
 
-      // Warianty - Rysowanie tabeli
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...slate800);
+      doc.text("PROPOZYCJA UBEZPIECZENIA POJAZDU", 195, 20, { align: 'right' });
+      
+      doc.setFontSize(7);
+      doc.setTextColor(...slate500);
+      doc.setFont(getFont("Kiro"), "normal");
+      doc.text(`Nr kalkulacji:`, 155, 26, { align: 'right' });
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.setTextColor(...slate800);
+      doc.text(oferta.numerOferty, 195, 26, { align: 'right' });
+
+      doc.setFont(getFont("Kiro"), "normal");
+      doc.setTextColor(...slate500);
+      doc.text(`Data kalkulacji:`, 155, 30, { align: 'right' });
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.setTextColor(...slate800);
+      doc.text(oferta.dataKalkulacji, 195, 30, { align: 'right' });
+
+      // Gruba niebieska linia
+      doc.setDrawColor(...palladaBlue);
+      doc.setLineWidth(0.6);
+      doc.line(15, 45, 195, 45);
+
+      // 2. Metadane
+      let currentY = 52;
+      const drawMetaRow = (label, value, label2, value2, y) => {
+          doc.setDrawColor(...slate200);
+          doc.setLineWidth(0.2);
+          doc.line(15, y + 2, 195, y + 2);
+          
+          doc.setFontSize(8);
+          doc.setFont(getFont("Kiro"), "bold");
+          doc.setTextColor(...slate400);
+          doc.text(label, 15, y);
+          doc.setFont(getFont("Kiro"), "bold");
+          doc.setTextColor(...slate800);
+          doc.text((value || '-').toUpperCase(), 45, y);
+          
+          if (label2) {
+              doc.setFont(getFont("Kiro"), "bold");
+              doc.setTextColor(...slate400);
+              doc.text(label2, 105, y);
+              doc.setFont(getFont("Kiro"), "bold");
+              doc.setTextColor(...slate800);
+              doc.text((value2 || '-').toUpperCase(), 130, y);
+          }
+      };
+
+      drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, "Ubezpieczony:", oferta.klient.nazwa, currentY);
+      currentY += 6;
+      drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, oferta.klient.czyLeasing ? "Właściciel:" : "", oferta.klient.czyLeasing ? oferta.klient.wlasciciel : "", currentY);
+      currentY += 6;
+      drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
+      currentY += 14;
+
+      // 3. Warianty - Rysowanie tabeli
       if (oferta.warianty.length > 0) {
           let tableStartY = currentY;
           let pageSeparators = [];
@@ -696,11 +635,6 @@ const OfertyModule = ({ user }) => {
               const w = oferta.warianty[i];
               let startY = currentY;
               
-              let naprawaTxt = `Naprawa: ${w.zakresAC?.metodaNaprawy || ''}`;
-              if (w.firma === 'Warta' && w.zakresAC?.metodaNaprawy === 'ASO' && w.zakresAC?.wariantWarta) {
-                  naprawaTxt = `Naprawa: ASO (Warta ${w.zakresAC.wariantWarta})`;
-              }
-
               // --- KROK 1: SYMULACJA WYSOKOŚCI --- 
               let simMaxY = startY + 36; 
               
@@ -720,7 +654,7 @@ const OfertyModule = ({ user }) => {
               };
               if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) addC3("Auto wartość 100% (stała suma)");
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) addC3("Brak redukcji sumy ubezpieczenia");
-              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(naprawaTxt);
+              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(`Naprawa: ${w.zakresAC.metodaNaprawy}`);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') addC3(`Assistance: ${w.dodatki['car_ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') addC3(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') addC3(`Szyby: ${w.dodatki['szyby']}`);
@@ -779,8 +713,12 @@ const OfertyModule = ({ user }) => {
 
               // --- KROK 4: RYSOWANIE TREŚCI ---
               
-              // Kolumna 1: Towarzystwo
+              // ==========================================
+              // Kolumna 1: Towarzystwo (Wyśrodkowana w pionie i poziomie)
+              // ==========================================
               const colCenterX = 37.5; 
+              
+              // 1. ZNACZNIK TRYBU (OC/AC)
               doc.setFillColor(...palladaBlue);
               const tagW = 16;
               doc.roundedRect(colCenterX - (tagW / 2), startY + 4, tagW, 4.5, 1, 1, 'F'); 
@@ -788,21 +726,27 @@ const OfertyModule = ({ user }) => {
               doc.setFontSize(6);
               doc.text(w.tryb, colCenterX, startY + 7.2, { align: 'center' });
               
+              // 2. LOGO POD ZNACZNIKIEM
               const logoData = preloadedLogos[w.firma];
               if (logoData) {
                   const powieksozneLoga = ["PZU S.A.", "Interrisk", "Compensa", "Warta"];
                   const isBigger = powieksozneLoga.includes(w.firma);
+                  
                   let maxW = isBigger ? 28 : 24;
                   let maxH = isBigger ? 13 : 11;
+                  
                   let logoW = maxW;
                   let logoH = logoW / logoData.ratio;
+                  
                   if (logoH > maxH) {
                       logoH = maxH;
                       logoW = logoH * logoData.ratio;
                   }
+                  
                   let logoX = colCenterX - (logoW / 2);
                   let spaceY = 15.5; 
                   let logoY = startY + 8.5 + (spaceY - logoH) / 2;
+                  
                   doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
               } else {
                   doc.setTextColor(...palladaBlue);
@@ -812,6 +756,7 @@ const OfertyModule = ({ user }) => {
                   doc.text(fNameLines, colCenterX, startY + 16, { align: 'center' });
               }
               
+              // 3. SUMA UBEZPIECZENIA POD LOGIEM
               if (w.tryb !== 'OC') {
                   doc.setTextColor(...slate400);
                   doc.setFontSize(6);
@@ -843,15 +788,19 @@ const OfertyModule = ({ user }) => {
                   doc.text(typText, startValX + valW, startY + 31.5);
               }
 
+              // ==========================================
               // Kolumna 2: Zakres podstawowy
+              // ==========================================
               let c2Y = startY + 7;
               const drawCheckReal = (text) => {
                   doc.setLineWidth(0.4);
                   doc.setDrawColor(...palladaBlue);
                   doc.circle(63.5, c2Y - 0.7, 2.2, 'S'); 
+                  
                   doc.setLineWidth(0.5); 
                   doc.line(62.2, c2Y - 0.7, 63.2, c2Y + 0.3);
                   doc.line(63.2, c2Y + 0.3, 64.8, c2Y - 1.5);
+
                   doc.setTextColor(...slate800);
                   doc.setFontSize(7.5);
                   doc.setFont(getFont("Kiro"), "bold");
@@ -861,16 +810,21 @@ const OfertyModule = ({ user }) => {
 
               if (w.tryb !== 'AC') drawCheckReal("Ubezpieczenie OC");
               if (w.tryb !== 'OC') drawCheckReal("Autocasco (AC)");
-              if (w.dodatki['nnw']) drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
+              if (w.dodatki['nnw']) {
+                  drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
+              }
               if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
 
+              // ==========================================
               // Kolumna 3: Rozszerzenia
+              // ==========================================
               let c3Y = startY + 7;
               const drawBulletReal = (text) => {
                   doc.setTextColor(...palladaBlue);
                   doc.setFontSize(10);
                   doc.text("•", 107, c3Y);
+                  
                   doc.setTextColor(71, 85, 105);
                   doc.setFontSize(7);
                   doc.setFont(getFont("Kiro"), "normal");
@@ -881,7 +835,7 @@ const OfertyModule = ({ user }) => {
 
               if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) drawBulletReal("Auto wartość 100% (stała suma)");
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) drawBulletReal("Brak redukcji sumy ubezpieczenia");
-              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(naprawaTxt);
+              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(`Naprawa: ${w.zakresAC.metodaNaprawy}`);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['car_ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') drawBulletReal(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') drawBulletReal(`Szyby: ${w.dodatki['szyby']}`);
@@ -897,7 +851,9 @@ const OfertyModule = ({ user }) => {
                   }
               });
 
+              // ==========================================
               // Kolumna 4: Składka łączna
+              // ==========================================
               const midY = startY + ((maxY - startY) / 2);
               doc.setTextColor(...slate400);
               doc.setFontSize(6.5);
@@ -942,289 +898,63 @@ const OfertyModule = ({ user }) => {
           drawFrameAndHeader(tableStartY, currentY, isContinued);
       }
 
-      drawStandardFooter(doc, currentY);
+      // 4. Stopka
+      if (currentY > 250) {
+          doc.addPage();
+          currentY = 20;
+      }
+      
+      currentY += 10;
+      doc.setDrawColor(...slate200);
+      doc.setLineWidth(0.2);
+      doc.line(15, currentY, 195, currentY);
+      
+      currentY += 6;
+      doc.setTextColor(...slate800);
+      doc.setFontSize(6);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("INFORMACJA PRAWNA", 15, currentY);
+      doc.setTextColor(...slate500);
+      doc.setFont(getFont("Kiro"), "normal");
+      doc.text("Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji", 15, currentY + 4);
+      doc.text("historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.", 15, currentY + 7);
 
+      doc.setTextColor(...slate400);
+      doc.setFontSize(5);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
+      doc.setTextColor(...palladaBlue);
+      doc.setFontSize(10);
+      
+      // WYKORZYSTANIE NAZWY UŻYTKOWNIKA Z EMAILA
+      const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
+      doc.text(displayName, 195, currentY + 4, { align: 'right' });
+      
+      doc.setTextColor(71, 85, 105);
+      doc.setFontSize(6);
+      doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
+
+      // DODANA: NUMERACJA STRON NA KAŻDEJ STRONIE
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          doc.setFontSize(7);
+          doc.setTextColor(...slate400); 
+          doc.setFont(getFont("Kiro"), "normal");
+          doc.text(`Strona ${i} z ${totalPages}`, 105, 290, { align: 'center' });
+      }
+
+      // Zapis PDF
       doc.save(`Oferta_${oferta.numerOferty.replace(/\//g, '_')}.pdf`);
       setPdfMode(false);
       setValidationError("");
 
     } catch (err) {
       console.error("PDF Native Error:", err);
-      setValidationError("Błąd podczas generowania pliku PDF.");
+      setValidationError("Błąd podczas generowania natywnego pliku PDF.");
       setPdfMode(false);
     }
   };
-
-
-  // --- GENERATOR SZCZEGÓŁOWEJ OFERTY DLA POJEDYNCZEGO WARIANTU ---
-  const handleGenerateSinglePdfNative = async (wariant) => {
-    setPdfMode(true);
-    setPdfLoadingMessage("Generowanie rekomendacji...");
-    try {
-      await loadJsPdfScript();
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');
-      
-      const preloadedLogos = await preparePdfAssets(doc, [wariant.firma]);
-      const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
-      const palladaBlue = [0, 103, 177];
-      const slate800 = [30, 41, 59];
-      const slate500 = [100, 116, 139];
-      const slate400 = [148, 163, 184];
-      const blue50 = [239, 246, 255];
-      const white = [255, 255, 255];
-
-      // --- STRONA 1: PODSUMOWANIE ---
-      drawStandardHeader(doc, "REKOMENDOWANA OFERTA");
-      let currentY = drawMetadata(doc, 52);
-
-      currentY += 5;
-
-      // Hero Section (Duży niebieski blok ze składką i logo)
-      doc.setFillColor(...palladaBlue);
-      doc.roundedRect(15, currentY, 180, 45, 3, 3, 'F');
-      
-      doc.setTextColor(...white);
-      doc.setFontSize(8);
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.text("REKOMENDOWANY UBEZPIECZYCIEL", 25, currentY + 12);
-      
-      const logoData = preloadedLogos[wariant.firma];
-      if (logoData) {
-          // Rysowanie białego tła pod logo żeby było widoczne na niebieskim
-          doc.setFillColor(...white);
-          doc.roundedRect(25, currentY + 16, 45, 20, 2, 2, 'F');
-          
-          let maxW = 35;
-          let maxH = 14;
-          let logoW = maxW;
-          let logoH = logoW / logoData.ratio;
-          if (logoH > maxH) {
-              logoH = maxH;
-              logoW = logoH * logoData.ratio;
-          }
-          let logoX = 25 + (45 - logoW) / 2;
-          let logoY = currentY + 16 + (20 - logoH) / 2;
-          doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
-      } else {
-          doc.setFontSize(14);
-          doc.text(wariant.firma.toUpperCase(), 25, currentY + 26);
-      }
-
-      doc.setFontSize(8);
-      doc.setTextColor(204, 224, 239); // Jasny niebieski
-      doc.text("SKŁADKA ZA WSKAZANY ZAKRES:", 190, currentY + 15, { align: 'right' });
-      
-      const priceParts = wariant.skladka.split(',');
-      const priceStr1 = priceParts[0];
-      const priceStr2 = `,${priceParts[1] || '00'} PLN`;
-      
-      doc.setFontSize(28);
-      doc.setTextColor(...white);
-      doc.setFont(getFont("Kiro"), "bold");
-      const p1Width = doc.getTextWidth(priceStr1);
-      doc.setFontSize(12);
-      const p2Width = doc.getTextWidth(priceStr2);
-      
-      const totalPWidth = p1Width + p2Width;
-      const startX = 190 - totalPWidth;
-      
-      doc.setFontSize(28);
-      doc.text(priceStr1, startX, currentY + 28);
-      doc.setFontSize(12);
-      doc.text(priceStr2, startX + p1Width, currentY + 28);
-
-      const ratyText = wariant.liczbaRat === 1 ? 'PŁATNOŚĆ JEDNORAZOWA' : `W ${wariant.liczbaRat} ratach po ok. ${calculateInstallment(wariant.skladka, wariant.liczbaRat)} PLN`;
-      doc.setFontSize(8);
-      doc.text(ratyText, 190, currentY + 36, { align: 'right' });
-
-      currentY += 55;
-
-      // Sekcja Podsumowania Zakresu
-      doc.setTextColor(...slate800);
-      doc.setFontSize(12);
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.text("Podsumowanie zakresu ochrony", 15, currentY);
-      currentY += 8;
-
-      const drawDetailRow = (label, valueObj, startY, isBlue = false) => {
-          if (isBlue) {
-              doc.setFillColor(...blue50);
-              doc.rect(15, startY, 180, 10, 'F');
-          }
-          doc.setTextColor(...slate500);
-          doc.setFontSize(9);
-          doc.setFont(getFont("Kiro"), "bold");
-          doc.text(label, 20, startY + 6.5);
-
-          let currentValY = startY + 6.5;
-          doc.setTextColor(...slate800);
-          doc.setFontSize(9);
-
-          if (typeof valueObj === 'string') {
-              doc.setFont(getFont("Kiro"), "bold");
-              const lines = doc.splitTextToSize(valueObj, 110);
-              doc.text(lines, 75, currentValY);
-              return startY + Math.max(10, lines.length * 5 + 4);
-          } else if (Array.isArray(valueObj)) {
-             let rowH = 10;
-             valueObj.forEach((item, idx) => {
-                 if (item.bullet) {
-                     doc.setTextColor(...palladaBlue);
-                     doc.text("•", 75, currentValY);
-                     doc.setTextColor(...slate800);
-                     doc.setFont(getFont("Kiro"), "normal");
-                     const lines = doc.splitTextToSize(item.text, 105);
-                     doc.text(lines, 79, currentValY);
-                     currentValY += lines.length * 4.5;
-                 } else {
-                     doc.setFont(getFont("Kiro"), "bold");
-                     const lines = doc.splitTextToSize(item.text, 110);
-                     doc.text(lines, 75, currentValY);
-                     currentValY += lines.length * 4.5;
-                 }
-             });
-             return startY + Math.max(10, currentValY - (startY + 6.5) + 4);
-          }
-      };
-
-      let isBlueRow = true;
-      currentY = drawDetailRow("Zakres oferty:", wariant.tryb, currentY, isBlueRow); isBlueRow = !isBlueRow;
-      
-      if (wariant.tryb !== 'OC') {
-          currentY = drawDetailRow("Suma ubezpieczenia AC:", `${wariant.sumaUbezpieczenia} PLN (${wariant.typSumy})`, currentY, isBlueRow); isBlueRow = !isBlueRow;
-          
-          let naprawaTxt = `Naprawa w wariancie: ${wariant.zakresAC?.metodaNaprawy || ''}`;
-          if (wariant.firma === 'Warta' && wariant.zakresAC?.metodaNaprawy === 'ASO' && wariant.zakresAC?.wariantWarta) {
-              naprawaTxt = `Naprawa w wariancie: ASO (Warta ${wariant.zakresAC.wariantWarta})`;
-          }
-          
-          let acDetails = [{ text: naprawaTxt, bullet: false }];
-          if (wariant.zakresAC?.stalaSuma) acDetails.push({ text: "Gwarantowana stała wartość pojazdu (brak utraty wartości)", bullet: true });
-          if (wariant.zakresAC?.nieredukcyjna) acDetails.push({ text: "Brak redukcji sumy ubezpieczenia po szkodzie", bullet: true });
-          
-          currentY = drawDetailRow("Szczegóły AC:", acDetails, currentY, isBlueRow); isBlueRow = !isBlueRow;
-      }
-
-      if (wariant.dodatki['car_ass'] || wariant.dodatki['ass'] || wariant.dodatki['warta_pomoc']) {
-          const assName = wariant.dodatki['car_ass'] || wariant.dodatki['warta_pomoc'] || wariant.dodatki['ass'];
-          const txt = typeof assName === 'string' && assName !== 'true' ? assName : "Wybrane";
-          currentY = drawDetailRow("Wariant Assistance:", txt, currentY, isBlueRow); isBlueRow = !isBlueRow;
-      }
-
-      if (wariant.dodatki['nnw']) {
-          const nnwTxt = typeof wariant.dodatki['nnw'] === 'string' && wariant.dodatki['nnw'] !== 'true' ? wariant.dodatki['nnw'] : "Wybrane";
-          currentY = drawDetailRow("Suma ubezp. NNW:", nnwTxt, currentY, isBlueRow); isBlueRow = !isBlueRow;
-      }
-
-      if (wariant.dodatki['szyby']) {
-          const szybyTxt = typeof wariant.dodatki['szyby'] === 'string' && wariant.dodatki['szyby'] !== 'true' ? wariant.dodatki['szyby'] : "Wykupione";
-          currentY = drawDetailRow("Ubezpieczenie Szyb:", szybyTxt, currentY, isBlueRow); isBlueRow = !isBlueRow;
-      }
-
-      // Sprawdzenie czy dodać klauzule na pierwszej stronie jeśli mało
-      let otherDodatki = [];
-      Object.entries(wariant.dodatki).forEach(([id, val]) => {
-          if (!val || ['nnw', 'ass', 'car_ass', 'szyby', 'warta_pomoc'].includes(id)) return;
-          const dKonfig = (DODATKI_KONFIG[wariant.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
-          if (!dKonfig) return;
-          if (Array.isArray(val)) {
-             otherDodatki.push(`Pakiet: ${dKonfig.label} (${val.length} klauzul) - szczegóły na str. 2`);
-          } else {
-             const lbl = (typeof val === 'string' && val !== 'true') ? `${dKonfig.label}: ${val}` : dKonfig.label;
-             otherDodatki.push(lbl);
-          }
-      });
-
-      if (otherDodatki.length > 0) {
-          let list = otherDodatki.map(d => ({ text: d, bullet: true }));
-          currentY = drawDetailRow("Pozostałe opcje:", list, currentY, isBlueRow); isBlueRow = !isBlueRow;
-      }
-
-      drawStandardFooter(doc, currentY);
-
-      // --- STRONA 2: SZCZEGÓŁOWY WYKAZ ROZSZERZEŃ (Ikony / Ptaszki) ---
-      doc.addPage();
-      currentY = 20;
-      
-      doc.setTextColor(...slate800);
-      doc.setFontSize(14);
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.text("Rozszerz swoją ochronę ubezpieczenia", 15, currentY);
-      doc.setFontSize(9);
-      doc.setTextColor(...slate400);
-      doc.setFont(getFont("Kiro"), "normal");
-      doc.text("Zestawienie wybranych klauzul i rozszerzeń w ramach Twojej polisy", 15, currentY + 6);
-      
-      currentY += 18;
-
-      const drawCheckItem = (text, startY) => {
-          doc.setLineWidth(0.4);
-          doc.setDrawColor(...palladaBlue);
-          doc.circle(18, startY - 1, 2.5, 'S'); 
-          doc.setLineWidth(0.6); 
-          doc.line(16.5, startY - 1, 17.8, startY + 0.3);
-          doc.line(17.8, startY + 0.3, 19.8, startY - 2);
-
-          doc.setTextColor(...slate800);
-          doc.setFontSize(8.5);
-          doc.setFont(getFont("Kiro"), "bold");
-          const lines = doc.splitTextToSize(text, 160);
-          doc.text(lines, 24, startY);
-          return startY + (lines.length * 5) + 2;
-      };
-
-      if (wariant.tryb !== 'AC') currentY = drawCheckItem("Ubezpieczenie Odpowiedzialności Cywilnej (OC) posiadaczy pojazdów", currentY);
-      if (wariant.tryb !== 'OC') {
-          currentY = drawCheckItem("Ubezpieczenie Autocasco (AC)", currentY);
-          
-          if(wariant.zakresAC?.stalaSuma) currentY = drawCheckItem("Stała Wartość Pojazdu - utrzymanie sumy ubezpieczenia przez cały rok", currentY);
-          if(wariant.zakresAC?.nieredukcyjna) currentY = drawCheckItem("Brak redukcji sumy ubezpieczenia po wypłacie odszkodowania", currentY);
-          if(wariant.zakresAC?.metodaNaprawy) {
-              let nTxt = `Bezgotówkowe rozliczenie i naprawa w wariancie: ${wariant.zakresAC.metodaNaprawy}`;
-              if (wariant.firma === 'Warta' && wariant.zakresAC.metodaNaprawy === 'ASO' && wariant.zakresAC.wariantWarta) nTxt += ` (Warta ${wariant.zakresAC.wariantWarta})`;
-              currentY = drawCheckItem(nTxt, currentY);
-          }
-      }
-
-      Object.entries(wariant.dodatki).forEach(([id, val]) => {
-          if (!val) return;
-          const dKonfig = (DODATKI_KONFIG[wariant.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
-          const label = dKonfig ? dKonfig.label : id;
-          
-          if (Array.isArray(val)) {
-              currentY += 3;
-              doc.setTextColor(...palladaBlue);
-              doc.setFontSize(10);
-              doc.setFont(getFont("Kiro"), "bold");
-              doc.text(label.toUpperCase(), 15, currentY);
-              currentY += 7;
-              
-              val.forEach(v => {
-                  if (currentY > 260) { doc.addPage(); currentY = 20; }
-                  currentY = drawCheckItem(v, currentY);
-              });
-              currentY += 3;
-          } else {
-              if (currentY > 260) { doc.addPage(); currentY = 20; }
-              const displayVal = (typeof val === 'string' && val !== 'true') ? `${label}: ${val}` : label;
-              currentY = drawCheckItem(displayVal, currentY);
-          }
-      });
-
-      drawStandardFooter(doc, currentY);
-
-      doc.save(`Rekomendacja_${oferta.numerOferty.replace(/\//g, '_')}_${wariant.firma.replace(/\s/g, '')}.pdf`);
-      setPdfMode(false);
-      setValidationError("");
-
-    } catch (err) {
-      console.error("PDF Native Error:", err);
-      setValidationError("Błąd podczas generowania rekomendacji PDF.");
-      setPdfMode(false);
-    }
-  };
-
 
   const handleInputChange = (section, field, value, formatFn) => {
     let finalValue = value;
@@ -1415,433 +1145,345 @@ const OfertyModule = ({ user }) => {
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          
-          {/* NOWE ZAKŁADKI KATEGORII OFERT */}
-          <div className="flex bg-white p-2 rounded-[1.5rem] border border-slate-200 shadow-sm overflow-x-auto no-scrollbar mb-8 gap-2">
-            {KATEGORIE.map(kat => (
-              <button
-                key={kat}
-                onClick={() => setKategoriaOferty(kat)}
-                className={`whitespace-nowrap px-6 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-widest ${
-                  kategoriaOferty === kat
-                  ? 'bg-[#0067b1] text-white shadow-md'
-                  : 'text-slate-500 hover:text-[#0067b1] hover:bg-blue-50/50'
-                }`}
-              >
-                {kat}
-              </button>
-            ))}
-          </div>
-
-          {kategoriaOferty === 'Komunikacja' ? (
-            <div className="flex flex-col gap-10 animate-in fade-in">
+          <div className="flex flex-col gap-10">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
               
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                
-                <div className="lg:col-span-4 space-y-6">
-                  <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
-                    <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
-                      <LayoutDashboard size={18} /> Podmiot ubezpieczony
-                    </h2>
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ubezpieczony (Imię i Nazwisko / Firma)</label>
-                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800 shadow-sm" value={oferta.klient.nazwa} onChange={(e) => handleInputChange('klient', 'nazwa', e.target.value, formatTitleCaseOferty)} />
-                      </div>
-
-                      <div className="flex items-center gap-4 bg-blue-50/30 p-4 rounded-2xl border border-blue-100 shadow-sm">
-                          <input type="checkbox" checked={oferta.klient.czyLeasing} onChange={(e) => handleInputChange('klient', 'czyLeasing', e.target.checked)} className="w-6 h-6 rounded-lg text-[#0067b1] border-slate-300 focus:ring-[#0067b1]" />
-                          <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Leasing / Wynajem</span>
-                      </div>
-                      {oferta.klient.czyLeasing && (
-                        <input className="w-full px-5 py-4 bg-amber-50/50 border-2 border-amber-100 rounded-2xl outline-none text-sm font-black text-slate-800 placeholder:text-amber-400/50 shadow-sm" value={oferta.klient.wlasciciel} onChange={(e) => handleInputChange('klient', 'wlasciciel', e.target.value)} placeholder="Wpisz leasingodawcę..." />
-                      )}
+              <div className="lg:col-span-4 space-y-6">
+                <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
+                  <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
+                    <LayoutDashboard size={18} /> Podmiot ubezpieczony
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ubezpieczony (Imię i Nazwisko / Firma)</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800 shadow-sm" value={oferta.klient.nazwa} onChange={(e) => handleInputChange('klient', 'nazwa', e.target.value, formatTitleCaseOferty)} />
                     </div>
-                  </section>
 
-                  <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
-                    <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
-                      <Car size={18} /> Specyfikacja pojazdu
-                    </h2>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Marka</label>
-                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.marka} onChange={(e) => handleInputChange('pojazd', 'marka', e.target.value, formatTitleCaseOferty)} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Model</label>
-                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.model} onChange={(e) => handleInputChange('pojazd', 'model', e.target.value, formatTitleCaseOferty)} />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rok produkcji</label>
-                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nr Rejestracyjny</label>
-                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
-                        </div>
+                    <div className="flex items-center gap-4 bg-blue-50/30 p-4 rounded-2xl border border-blue-100 shadow-sm">
+                        <input type="checkbox" checked={oferta.klient.czyLeasing} onChange={(e) => handleInputChange('klient', 'czyLeasing', e.target.checked)} className="w-6 h-6 rounded-lg text-[#0067b1] border-slate-300 focus:ring-[#0067b1]" />
+                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Leasing / Wynajem</span>
+                    </div>
+                    {oferta.klient.czyLeasing && (
+                      <input className="w-full px-5 py-4 bg-amber-50/50 border-2 border-amber-100 rounded-2xl outline-none text-sm font-black text-slate-800 placeholder:text-amber-400/50 shadow-sm" value={oferta.klient.wlasciciel} onChange={(e) => handleInputChange('klient', 'wlasciciel', e.target.value)} placeholder="Wpisz leasingodawcę..." />
+                    )}
+                  </div>
+                </section>
+
+                <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
+                  <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
+                    <Car size={18} /> Specyfikacja pojazdu
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Marka</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.marka} onChange={(e) => handleInputChange('pojazd', 'marka', e.target.value, formatTitleCaseOferty)} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Fingerprint size={12} className="text-[#0067b1]"/> Numer VIN</label>
-                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} />
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Model</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.model} onChange={(e) => handleInputChange('pojazd', 'model', e.target.value, formatTitleCaseOferty)} />
                       </div>
                     </div>
-                  </section>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rok produkcji</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nr Rejestracyjny</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Fingerprint size={12} className="text-[#0067b1]"/> Numer VIN</label>
+                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} />
+                    </div>
+                  </div>
+                </section>
+              </div>
 
-                <div className="lg:col-span-8 space-y-10">
-                  <section className="bg-white rounded-[2.5rem] p-10 shadow-xl border-t-8 border-[#0067b1] relative overflow-hidden shadow-slate-200/60">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
-                      
-                      <div className="md:col-span-5 space-y-8" ref={konfiguratorRef}>
-                        <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 shadow-inner">
-                          {['OC', 'OC+AC', 'AC'].map(id => (
-                            <button 
-                              key={id} 
-                              onClick={() => {
-                                setNowyWariant({...nowyWariant, tryb: id});
-                                setNowyWariant(prev => {
-                                  const dod = {...prev.dodatki};
-                                  delete dod['klauzule_katalog'];
-                                  delete dod['klauzule_katalog_biznes'];
-                                  return {...prev, dodatki: dod};
-                                });
-                              }} 
-                              className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
-                            > 
-                              {id} 
-                            </button>
-                          ))}
+              <div className="lg:col-span-8 space-y-10">
+                <section className="bg-white rounded-[2.5rem] p-10 shadow-xl border-t-8 border-[#0067b1] relative overflow-hidden shadow-slate-200/60">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
+                    
+                    <div className="md:col-span-5 space-y-8" ref={konfiguratorRef}>
+                      <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 shadow-inner">
+                        {['OC', 'OC+AC', 'AC'].map(id => (
+                          <button 
+                            key={id} 
+                            onClick={() => {
+                              setNowyWariant({...nowyWariant, tryb: id});
+                              setNowyWariant(prev => {
+                                const dod = {...prev.dodatki};
+                                delete dod['klauzule_katalog'];
+                                delete dod['klauzule_katalog_biznes'];
+                                return {...prev, dodatki: dod};
+                              });
+                            }} 
+                            className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
+                          > 
+                            {id} 
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building2 size={16} className="text-[#0067b1]"/> Towarzystwo</label>
+                          <select className="w-full px-5 py-5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
+                            {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
+                          </select>
                         </div>
 
-                        <div className="space-y-6">
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building2 size={16} className="text-[#0067b1]"/> Towarzystwo</label>
-                            <select className="w-full px-5 py-5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
-                              {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
-                            </select>
-                          </div>
-
-                          {nowyWariant.tryb !== 'OC' && (
-                            <div className="space-y-3 relative">
-                              <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
-                              <div className="relative">
-                                <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
-                                <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="space-y-2 relative">
-                            <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
+                        {nowyWariant.tryb !== 'OC' && (
+                          <div className="space-y-3 relative">
+                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
                             <div className="relative">
-                              <input type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
-                              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-sm tracking-widest">PLN</span>
+                              <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
+                              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
                             </div>
-                            <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
-                              {[1, 2, 4, 12].map(raty => (
-                                <button key={raty} onClick={() => setNowyWariant({...nowyWariant, liczbaRat: raty})} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-wider ${nowyWariant.liczbaRat === raty ? 'bg-[#0067b1] text-white' : 'text-slate-500'}`}> {raty === 1 ? '1 Rata' : `${raty} Raty`} </button>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-2 relative">
+                          <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
+                          <div className="relative">
+                            <input type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
+                            <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-sm tracking-widest">PLN</span>
+                          </div>
+                          <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
+                            {[1, 2, 4, 12].map(raty => (
+                              <button key={raty} onClick={() => setNowyWariant({...nowyWariant, liczbaRat: raty})} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-wider ${nowyWariant.liczbaRat === raty ? 'bg-[#0067b1] text-white' : 'text-slate-500'}`}> {raty === 1 ? '1 Rata' : `${raty} Raty`} </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="hidden md:block mt-8">
+                         {validationError && (
+                           <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
+                             <XCircle size={18} /> {validationError}
+                           </div>
+                         )}
+                         <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                           <Plus size={26} /> Dodaj wariant
+                         </button>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-7 space-y-8">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+                        <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><PackagePlus size={20} /> Konfiguracja Rozszerzeń</p>
+                        <Layers size={20} className="text-[#0067b1]/30" />
+                      </div>
+
+                      <div className="space-y-10 bg-blue-50/40 p-8 rounded-[3.5rem] border border-blue-100 shadow-inner">
+                        {(nowyWariant.tryb === 'OC+AC' || nowyWariant.tryb === 'AC') && (
+                          <div className="space-y-4">
+                            <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
+                            
+                            <div className={`grid grid-cols-2 lg:grid-cols-4 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
+                              {['Kosztorys', 'Minicasco', 'Partnerski', 'ASO'].map(metoda => (
+                                <button key={metoda} onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, metodaNaprawy: metoda}})} className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}> {metoda} </button>
                               ))}
                             </div>
-                          </div>
-                        </div>
 
-                        <div className="hidden md:block mt-8">
-                           {validationError && (
-                             <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
-                               <XCircle size={18} /> {validationError}
-                             </div>
-                           )}
-                           <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
-                             <Plus size={26} /> Dodaj wariant
-                           </button>
-                        </div>
-                      </div>
-
-                      <div className="md:col-span-7 space-y-8">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-5">
-                          <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><PackagePlus size={20} /> Konfiguracja Rozszerzeń</p>
-                          <Layers size={20} className="text-[#0067b1]/30" />
-                        </div>
-
-                        <div className="space-y-10 bg-blue-50/40 p-8 rounded-[3.5rem] border border-blue-100 shadow-inner">
-                          {(nowyWariant.tryb === 'OC+AC' || nowyWariant.tryb === 'AC') && (
-                            <div className="space-y-4">
-                              <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
-                              
-                              <div className={`grid grid-cols-2 lg:grid-cols-4 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
-                                {['Kosztorys', 'Minicasco', 'Partnerski', 'ASO'].map(metoda => (
-                                  <button 
-                                    key={metoda} 
-                                    onClick={() => setNowyWariant({
-                                      ...nowyWariant, 
-                                      zakresAC: {
-                                        ...nowyWariant.zakresAC, 
-                                        metodaNaprawy: metoda,
-                                        wariantWarta: (nowyWariant.firma === 'Warta' && metoda === 'ASO') ? (nowyWariant.zakresAC.wariantWarta || 'Komfort') : ''
-                                      }
-                                    })} 
-                                    className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
-                                  > 
-                                    {metoda} 
-                                  </button>
-                                ))}
-                              </div>
-
-                              {nowyWariant.firma === 'Warta' && nowyWariant.zakresAC.metodaNaprawy === 'ASO' && (
-                                <div className="animate-in fade-in slide-in-from-top-2">
-                                  <div className="flex gap-2 p-1.5 bg-blue-50/80 rounded-2xl border border-blue-100 shadow-inner">
-                                    <button 
-                                      onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Standard'}})} 
-                                      className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Standard' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
-                                    > 
-                                      <ShieldAlert size={14} /> Warta Standard
-                                    </button>
-                                    <button 
-                                      onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Komfort'}})} 
-                                      className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Komfort' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
-                                    > 
-                                      <ShieldCheck size={14} /> Warta Komfort
-                                    </button>
-                                  </div>
-                                  <div className="mt-2.5 text-[9px] font-bold text-[#0067b1]/70 uppercase tracking-widest text-center px-2 flex items-center justify-center gap-1.5">
-                                    <Activity size={12} />
-                                    {nowyWariant.zakresAC.wariantWarta === 'Komfort' 
-                                      ? "Zniesiony udział własny dla młodych kierowców (Brak potrąceń)." 
-                                      : "Udział własny 10% przy młodych kierowcach (aby wykupić zaznacz podwyższone ryzyko)."}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                                <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
-                                  <Activity size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Stała wartość pojazdu</span>
-                                </button>
-                                <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
-                                  <ShieldCheck size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Brak redukcji sumy</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="space-y-4">
-                            <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Star size={14}/> Dodatki ubezpieczyciela</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                              {aktualnaKonfigDodatkow
-                                .filter(dodatek => !dodatek.showIn || dodatek.showIn.includes(nowyWariant.tryb))
-                                .map(dodatek => {
-                                  const IconComponent = dodatek.icon || PackagePlus;
-                                  const isActive = !!nowyWariant.dodatki[dodatek.id];
-                                  const isExpanded = expandedDodatek === dodatek.id;
-                                  
-                                  const isMulti = !!dodatek.getMultiOptions;
-                                  const currentMultiOptions = isMulti ? dodatek.getMultiOptions(nowyWariant.tryb) : [];
-                                  
-                                  let displayLabel = dodatek.label;
-                                  if (isActive && !isMulti && typeof nowyWariant.dodatki[dodatek.id] === 'string' && nowyWariant.dodatki[dodatek.id] !== 'true') {
-                                    displayLabel = `${dodatek.label}: ${nowyWariant.dodatki[dodatek.id]}`;
-                                  } else if (isActive && isMulti && Array.isArray(nowyWariant.dodatki[dodatek.id])) {
-                                    displayLabel = `${dodatek.label} (${nowyWariant.dodatki[dodatek.id].length})`;
-                                  }
-
-                                  return (
-                                    <div key={dodatek.id} className="flex flex-col gap-2">
-                                      <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
-                                        <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50'}`}><IconComponent size={24} /></div>
-                                        <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
-                                        {isActive && <CheckCircle2 size={16} className="absolute top-3 right-3 text-white/80" />}
-                                      </button>
-                                      
-                                      {isExpanded && !isMulti && dodatek.options && (
-                                        <div className="flex flex-col gap-1.5 animate-in slide-in-from-top-2">
-                                          {dodatek.options.map(opt => (
-                                            <button key={opt} onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e)} className="py-3 px-2 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white border-2 border-blue-50 text-[#0067b1] hover:bg-[#0067b1] hover:text-white shadow-sm"> {opt} </button>
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      {isExpanded && isMulti && (
-                                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#001c3d]/60 p-6 backdrop-blur-md animate-in fade-in" onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }}>
-                                          <div className="bg-white rounded-[3.5rem] w-full max-w-xl shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 border border-white/20" onClick={e => e.stopPropagation()}>
-                                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 rounded-t-[3.5rem]">
-                                              <div className="flex flex-col gap-1">
-                                                <p className="text-[14px] font-black uppercase text-[#0067b1] tracking-[0.25em] flex items-center gap-3">
-                                                  <IconComponent size={22} /> {dodatek.label}
-                                                </p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Wariant: {nowyWariant.tryb}</p>
-                                              </div>
-                                              <button onClick={() => setExpandedDodatek(null)} className="text-slate-400 hover:text-red-500 bg-white p-3 rounded-full shadow-lg border border-slate-100 transition-all active:scale-90">
-                                                <XCircle size={26} />
-                                              </button>
-                                            </div>
-                                            
-                                            <div className="p-8 overflow-y-auto no-scrollbar space-y-3 flex-1">
-                                              {currentMultiOptions.map(opt => {
-                                                const selectedArray = nowyWariant.dodatki[dodatek.id] || [];
-                                                const isMultiSelected = selectedArray.includes(opt);
-                                                return (
-                                                  <button
-                                                    key={opt}
-                                                    onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e, true)}
-                                                    className={`w-full py-5 px-6 rounded-3xl text-[10px] font-black tracking-wide text-left transition-all border-2 flex items-center justify-between gap-5 ${isMultiSelected ? 'bg-blue-50 border-[#0067b1] text-[#0067b1] shadow-inner' : 'bg-white border-slate-100 text-slate-500 hover:bg-blue-50/30 hover:border-blue-200'}`}
-                                                  >
-                                                    <span className="leading-tight flex-1 text-[11px] font-black text-[#1e293b]">{opt}</span>
-                                                    {isMultiSelected ? (
-                                                      <CheckCircle2 size={24} className="text-[#0067b1] shrink-0" />
-                                                    ) : (
-                                                      <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-200 shrink-0"></div>
-                                                    )}
-                                                  </button>
-                                                );
-                                              })}
-                                            </div>
-                                            
-                                            <div className="p-8 border-t border-slate-100 bg-slate-50 rounded-b-[3.5rem]">
-                                              <button onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }} className="w-full py-6 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white text-[13px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-blue-500/40 hover:scale-[1.01] active:scale-95 transition-all">
-                                                Zatwierdź klauzule
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                                <Activity size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Stała wartość pojazdu</span>
+                              </button>
+                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                                <ShieldCheck size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Brak redukcji sumy</span>
+                              </button>
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="block md:hidden mt-8">
-                           {validationError && (
-                             <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
-                               <XCircle size={18} /> {validationError}
-                             </div>
-                           )}
-                           <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
-                             <Plus size={26} /> Dodaj wariant
-                           </button>
-                        </div>
+                        )}
 
-                      </div>
-                    </div>
-                  </section>
-                </div>
-              </div>
-
-              {oferta.warianty.length > 0 && (
-                <div className="w-full mt-4 animate-in fade-in slide-in-from-bottom-8">
-                  
-                  <div className="flex flex-col md:flex-row items-center justify-between border-b border-slate-200 pb-5 mb-8 gap-6">
-                    <h2 className="text-[13px] font-black uppercase tracking-[0.2em] text-[#0067b1] flex items-center gap-3 ml-2">
-                      <Layers size={22} /> Przygotowane Warianty ({oferta.warianty.length})
-                    </h2>
-                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                      <button onClick={zapiszWBazie} disabled={saving} className="px-8 py-4 bg-white text-slate-700 font-black rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all"> 
-                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save className="text-[#0067b1]" size={18}/>} Zapisz ofertę 
-                      </button>
-                      <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"> 
-                        <FileText size={18} /> Zestawienie PDF
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
-                    {oferta.warianty.map(w => (
-                      <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col animate-in zoom-in-95 group">
-                        <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center relative">
-                          <div className="flex flex-col gap-1">
-                            <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em] pr-20">{w.firma}</h3>
-                            <div className="flex gap-2">
-                              <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
-                            </div>
-                          </div>
-                          <div className="flex gap-1 absolute right-5 top-5">
-                            <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-2 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={16} /> </button>
-                            <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-2 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={16} /> </button>
-                          </div>
-                        </div>
-                        
-                        <div className="p-8 flex-1 flex flex-col justify-start bg-white">
-                          <div className="space-y-4">
-                            {w.tryb !== 'OC' && (
-                              <div className="flex justify-between items-center border-b border-slate-50 pb-5 mb-5 uppercase">
-                                <span className="text-slate-400 text-[10px] font-black">Suma:</span>
-                                <span className="text-[#0067b1] bg-blue-50/80 px-4 py-1.5 rounded-xl font-black text-[11px]">{w.sumaUbezpieczenia} PLN {w.typSumy}</span>
-                              </div>
-                            )}
-                            <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Odpowiedzialność OC</span> {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
-                            <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Autocasco (AC)</span> {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
-                            <div className="flex flex-wrap gap-2 mt-6">
-                              {w.tryb !== 'OC' && (
-                                <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1">
-                                  <Wrench size={10} /> 
-                                  {w.zakresAC.metodaNaprawy}
-                                  {w.firma === 'Warta' && w.zakresAC.metodaNaprawy === 'ASO' && w.zakresAC.wariantWarta ? ` (${w.zakresAC.wariantWarta})` : ''}
-                                </span>
-                              )}
-                              {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1"><Activity size={10} /> Stała Wartość</span>}
-                              {Object.entries(w.dodatki).map(([id, val]) => {
-                                if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                                const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Star size={14}/> Dodatki ubezpieczyciela</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {aktualnaKonfigDodatkow
+                              .filter(dodatek => !dodatek.showIn || dodatek.showIn.includes(nowyWariant.tryb))
+                              .map(dodatek => {
+                                const IconComponent = dodatek.icon || PackagePlus;
+                                const isActive = !!nowyWariant.dodatki[dodatek.id];
+                                const isExpanded = expandedDodatek === dodatek.id;
                                 
-                                if (Array.isArray(val)) {
-                                  return val.map(v => (
-                                    <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
-                                      {v}
-                                    </span>
-                                  ));
+                                const isMulti = !!dodatek.getMultiOptions;
+                                const currentMultiOptions = isMulti ? dodatek.getMultiOptions(nowyWariant.tryb) : [];
+                                
+                                let displayLabel = dodatek.label;
+                                if (isActive && !isMulti && typeof nowyWariant.dodatki[dodatek.id] === 'string' && nowyWariant.dodatki[dodatek.id] !== 'true') {
+                                  displayLabel = `${dodatek.label}: ${nowyWariant.dodatki[dodatek.id]}`;
+                                } else if (isActive && isMulti && Array.isArray(nowyWariant.dodatki[dodatek.id])) {
+                                  displayLabel = `${dodatek.label} (${nowyWariant.dodatki[dodatek.id].length})`;
                                 }
 
-                                const label = dKonfig ? dKonfig.label : id;
-                                const displayVal = (typeof val === 'string' && val !== 'true') ? (id === 'nnw' ? `NNW: ${val}` : `${label}: ${val}`) : label;
                                 return (
-                                  <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
-                                    {displayVal}
-                                  </span>
+                                  <div key={dodatek.id} className="flex flex-col gap-2">
+                                    <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
+                                      <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50'}`}><IconComponent size={24} /></div>
+                                      <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
+                                      {isActive && <CheckCircle2 size={16} className="absolute top-3 right-3 text-white/80" />}
+                                    </button>
+                                    
+                                    {isExpanded && !isMulti && dodatek.options && (
+                                      <div className="flex flex-col gap-1.5 animate-in slide-in-from-top-2">
+                                        {dodatek.options.map(opt => (
+                                          <button key={opt} onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e)} className="py-3 px-2 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white border-2 border-blue-50 text-[#0067b1] hover:bg-[#0067b1] hover:text-white shadow-sm"> {opt} </button>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {isExpanded && isMulti && (
+                                       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#001c3d]/60 p-6 backdrop-blur-md animate-in fade-in" onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }}>
+                                        <div className="bg-white rounded-[3.5rem] w-full max-w-xl shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 border border-white/20" onClick={e => e.stopPropagation()}>
+                                          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 rounded-t-[3.5rem]">
+                                            <div className="flex flex-col gap-1">
+                                              <p className="text-[14px] font-black uppercase text-[#0067b1] tracking-[0.25em] flex items-center gap-3">
+                                                <IconComponent size={22} /> {dodatek.label}
+                                              </p>
+                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Wariant: {nowyWariant.tryb}</p>
+                                            </div>
+                                            <button onClick={() => setExpandedDodatek(null)} className="text-slate-400 hover:text-red-500 bg-white p-3 rounded-full shadow-lg border border-slate-100 transition-all active:scale-90">
+                                              <XCircle size={26} />
+                                            </button>
+                                          </div>
+                                          
+                                          <div className="p-8 overflow-y-auto no-scrollbar space-y-3 flex-1">
+                                            {currentMultiOptions.map(opt => {
+                                              const selectedArray = nowyWariant.dodatki[dodatek.id] || [];
+                                              const isMultiSelected = selectedArray.includes(opt);
+                                              return (
+                                                <button
+                                                  key={opt}
+                                                  onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e, true)}
+                                                  className={`w-full py-5 px-6 rounded-3xl text-[10px] font-black tracking-wide text-left transition-all border-2 flex items-center justify-between gap-5 ${isMultiSelected ? 'bg-blue-50 border-[#0067b1] text-[#0067b1] shadow-inner' : 'bg-white border-slate-100 text-slate-500 hover:bg-blue-50/30 hover:border-blue-200'}`}
+                                                >
+                                                  <span className="leading-tight flex-1 text-[11px] font-black text-[#1e293b]">{opt}</span>
+                                                  {isMultiSelected ? (
+                                                    <CheckCircle2 size={24} className="text-[#0067b1] shrink-0" />
+                                                  ) : (
+                                                    <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-200 shrink-0"></div>
+                                                  )}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                          
+                                          <div className="p-8 border-t border-slate-100 bg-slate-50 rounded-b-[3.5rem]">
+                                            <button onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }} className="w-full py-6 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white text-[13px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-blue-500/40 hover:scale-[1.01] active:scale-95 transition-all">
+                                              Zatwierdź klauzule
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 );
                               })}
-                            </div>
                           </div>
                         </div>
-
-                        {/* STOPKA KARTY ZE SKŁADKĄ I PRZYCISKIEM PDF */}
-                        <div className="bg-slate-50/50 border-t border-slate-100 p-6 pt-5">
-                            <div className="text-center mb-5">
-                               <div className="flex items-center justify-center gap-1">
-                                <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
-                                <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
-                               </div>
-                            </div>
-                            
-                            <button 
-                              onClick={() => handleGenerateSinglePdfNative(w)}
-                              className="w-full bg-white border border-[#0067b1]/20 hover:border-[#0067b1] text-[#0067b1] py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm group-hover:bg-[#0067b1] group-hover:text-white"
-                            >
-                              <Award size={14} className="group-hover:animate-pulse" /> 
-                              <span>OFERTA PDF</span>
-                            </button>
-                        </div>
-
                       </div>
-                    ))}
+                      
+                      <div className="block md:hidden mt-8">
+                         {validationError && (
+                           <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
+                             <XCircle size={18} /> {validationError}
+                           </div>
+                         )}
+                         <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                           <Plus size={26} /> Dodaj wariant
+                         </button>
+                      </div>
+
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            {oferta.warianty.length > 0 && (
+              <div className="w-full mt-4 animate-in fade-in slide-in-from-bottom-8">
+                
+                <div className="flex flex-col md:flex-row items-center justify-between border-b border-slate-200 pb-5 mb-8 gap-6">
+                  <h2 className="text-[13px] font-black uppercase tracking-[0.2em] text-[#0067b1] flex items-center gap-3 ml-2">
+                    <Layers size={22} /> Przygotowane Warianty ({oferta.warianty.length})
+                  </h2>
+                  <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <button onClick={zapiszWBazie} disabled={saving} className="px-8 py-4 bg-white text-slate-700 font-black rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all"> 
+                      {saving ? <Loader2 className="animate-spin" size={18} /> : <Save className="text-[#0067b1]" size={18}/>} Zapisz ofertę 
+                    </button>
+                    <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"> 
+                      <FileText size={18} /> Generuj PDF oferty
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-[3rem] border border-slate-100 shadow-sm animate-in fade-in zoom-in-95">
-              <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-100 shadow-inner">
-                <PackagePlus size={40} className="text-slate-300" />
+
+                <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
+                  {oferta.warianty.map(w => (
+                    <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
+                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{w.firma}</h3>
+                          <div className="flex gap-2">
+                            <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={20} /> </button>
+                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={20} /> </button>
+                        </div>
+                      </div>
+                      <div className="p-8 flex-1 flex flex-col justify-between bg-white">
+                        <div className="space-y-4">
+                          {w.tryb !== 'OC' && (
+                            <div className="flex justify-between items-center border-b border-slate-50 pb-5 mb-5 uppercase">
+                              <span className="text-slate-400 text-[10px] font-black">Suma:</span>
+                              <span className="text-[#0067b1] bg-blue-50/80 px-4 py-1.5 rounded-xl font-black text-[11px]">{w.sumaUbezpieczenia} PLN {w.typSumy}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Odpowiedzialność OC</span> {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Autocasco (AC)</span> {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
+                          <div className="flex flex-wrap gap-2 mt-6">
+                            {w.tryb !== 'OC' && <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1"><Wrench size={10} /> {w.zakresAC.metodaNaprawy}</span>}
+                            {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1"><Activity size={10} /> Stała Wartość</span>}
+                            {Object.entries(w.dodatki).map(([id, val]) => {
+                              if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                              const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+                              
+                              if (Array.isArray(val)) {
+                                return val.map(v => (
+                                  <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                    {v}
+                                  </span>
+                                ));
+                              }
+
+                              const label = dKonfig ? dKonfig.label : id;
+                              const displayVal = (typeof val === 'string' && val !== 'true') ? (id === 'nnw' ? `NNW: ${val}` : `${label}: ${val}`) : label;
+                              return (
+                                <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                  {displayVal}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="pt-10 border-t border-slate-100 text-center mt-8">
+                           <div className="flex items-center justify-center gap-1">
+                            <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
+                            <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h2 className="text-2xl font-black text-[#0067b1] uppercase tracking-[0.2em]" style={styles.header}>{kategoriaOferty}</h2>
-              <p className="text-slate-500 font-bold mt-4 text-sm max-w-md uppercase tracking-widest leading-relaxed">
-                Moduł w przygotowaniu. Trwają prace nad wdrożeniem kalkulatora.
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </main>
 
         <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
@@ -1859,7 +1501,7 @@ const OfertyModule = ({ user }) => {
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-200/90 backdrop-blur-sm" data-html2canvas-ignore="true">
           <div className="flex flex-col items-center bg-white p-10 rounded-[3rem] shadow-2xl border border-blue-50 animate-in zoom-in-95">
             <Loader2 className="animate-spin text-[#0067b1] mb-6" size={56} />
-            <p className="text-sm font-black text-[#0067b1] tracking-[0.2em] uppercase">{pdfLoadingMessage}</p>
+            <p className="text-sm font-black text-[#0067b1] tracking-[0.2em] uppercase">Generowanie PDF...</p>
             <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">To zajmie tylko chwilę</p>
           </div>
         </div>
@@ -2467,4 +2109,3 @@ export default function App() {
     </div>
   );
 }
-
