@@ -34,7 +34,7 @@ import {
   RotateCcw,
   AlertCircle,
   Loader2,
-  Menu,
+  Menu, 
   X,
   CheckSquare,
   LayoutDashboard,
@@ -112,24 +112,24 @@ const WindshieldIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-// --- LOGO PALLADA ---
-const pallada_trans_logo = "https://raw.githubusercontent.com/pallada-git/assets/main/pallada_trans_logo.png"; 
+// --- LOGO PALLADA (Ścieżka relatywna do folderu public) ---
+const pallada_trans_logo = "/pallada_trans_logo.png"; 
 
-// --- LOGOTYPY TOWARZYSTW ---
+// --- LOGOTYPY TOWARZYSTW (Ścieżki relatywne do folderu public) ---
 const LOGOS = {
-  "Ergo Hestia": "https://raw.githubusercontent.com/pallada-git/assets/main/ergo_hestia_logo.png",
-  "Ergo Biznes": "https://raw.githubusercontent.com/pallada-git/assets/main/ergo_hestia_logo.png",
-  "PZU S.A.": "https://raw.githubusercontent.com/pallada-git/assets/main/pzu_logo.png",
-  "Warta": "https://raw.githubusercontent.com/pallada-git/assets/main/warta_logo.png",
-  "Link4": "https://raw.githubusercontent.com/pallada-git/assets/main/link4_logo.png",
-  "HDI": "https://raw.githubusercontent.com/pallada-git/assets/main/hdi_logo.png",
-  "Compensa": "https://raw.githubusercontent.com/pallada-git/assets/main/compensa_logo.png",
-  "Wiener": "https://raw.githubusercontent.com/pallada-git/assets/main/wiener_logo.png",
-  "Interrisk": "https://raw.githubusercontent.com/pallada-git/assets/main/interrisk_logo.png",
-  "Generali": "https://raw.githubusercontent.com/pallada-git/assets/main/generali_logo.png",
-  "Allianz": "https://raw.githubusercontent.com/pallada-git/assets/main/allianz_logo.png",
-  "Uniqa": "https://raw.githubusercontent.com/pallada-git/assets/main/uniqa_logo.png",
-  "MTU": "https://raw.githubusercontent.com/pallada-git/assets/main/mtu_logo.png"
+  "Ergo Hestia": "/ergo_hestia_logo.png",
+  "Ergo Biznes": "/ergo_hestia_logo.png",
+  "PZU S.A.": "/pzu_logo.png",
+  "Warta": "/warta_logo.png",
+  "Link4": "/link4_logo.png",
+  "HDI": "/hdi_logo.png",
+  "Compensa": "/compensa_logo.png",
+  "Wiener": "/wiener_logo.png",
+  "Interrisk": "/interrisk_logo.png",
+  "Generali": "/generali_logo.png",
+  "Allianz": "/allianz_logo.png",
+  "Uniqa": "/uniqa_logo.png",
+  "MTU": "/mtu_logo.png"
 };
 
 // --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
@@ -490,12 +490,15 @@ const OfertyModule = ({ user }) => {
           if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
               await new Promise((resolve) => {
                   const img = new Image();
-                  img.crossOrigin = "Anonymous";
+                  // Lokalne obrazy z public nie potrzebują crossOrigin Anonymous, ale nie przeszkadza on
                   img.onload = () => {
                       pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
                       resolve();
                   };
-                  img.onerror = resolve; 
+                  img.onerror = () => {
+                    console.warn(`Błąd ładowania logo: ${firma} ze ścieżki ${LOGOS[firma]}`);
+                    resolve();
+                  }; 
                   img.src = LOGOS[firma];
               });
           }
@@ -508,12 +511,14 @@ const OfertyModule = ({ user }) => {
       if (!pdfAssetsCache.mainLogo) {
           await new Promise((resolve) => {
               const img = new Image();
-              img.crossOrigin = "Anonymous";
               img.onload = () => {
                   pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
                   resolve();
               };
-              img.onerror = resolve;
+              img.onerror = () => {
+                console.warn(`Błąd ładowania głównego logo ze ścieżki ${pallada_trans_logo}`);
+                resolve();
+              };
               img.src = pallada_trans_logo;
           });
       }
@@ -1456,7 +1461,7 @@ const OfertyModule = ({ user }) => {
                     <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
                       <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
                         <div className="flex flex-col gap-1">
-                          <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{w.firma}</h3>
+                          <CompanyLogo firma={w.firma} />
                           <div className="flex gap-2">
                             <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
                           </div>
@@ -1727,7 +1732,6 @@ export default function App() {
         if (!pdfAssetsCache.mainLogo) {
             await new Promise((resolve) => {
                 const img = new Image();
-                img.crossOrigin = "Anonymous";
                 img.onload = () => {
                     pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
                     resolve();
