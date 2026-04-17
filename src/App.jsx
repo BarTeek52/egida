@@ -113,23 +113,23 @@ const WindshieldIcon = ({ size = 20, className = "" }) => (
 );
 
 // --- LOGO PALLADA ---
-const pallada_trans_logo = "./pallada_trans_logo.png"; 
+const pallada_trans_logo = "https://raw.githubusercontent.com/pallada-git/assets/main/pallada_trans_logo.png"; 
 
 // --- LOGOTYPY TOWARZYSTW ---
 const LOGOS = {
-  "Ergo Hestia": "./ergo_hestia_logo.png",
-  "Ergo Biznes": "./ergo_hestia_logo.png",
-  "PZU S.A.": "./pzu_logo.png",
-  "Warta": "./warta_logo.png",
-  "Link4": "./link4_logo.png",
-  "HDI": "./hdi_logo.png",
-  "Compensa": "./compensa_logo.png",
-  "Wiener": "./wiener_logo.png",
-  "Interrisk": "./interrisk_logo.png",
-  "Generali": "./generali_logo.png",
-  "Allianz": "./allianz_logo.png",
-  "Uniqa": "./uniqa_logo.png",
-  "MTU": "./mtu_logo.png"
+  "Ergo Hestia": "https://raw.githubusercontent.com/pallada-git/assets/main/ergo_hestia_logo.png",
+  "Ergo Biznes": "https://raw.githubusercontent.com/pallada-git/assets/main/ergo_hestia_logo.png",
+  "PZU S.A.": "https://raw.githubusercontent.com/pallada-git/assets/main/pzu_logo.png",
+  "Warta": "https://raw.githubusercontent.com/pallada-git/assets/main/warta_logo.png",
+  "Link4": "https://raw.githubusercontent.com/pallada-git/assets/main/link4_logo.png",
+  "HDI": "https://raw.githubusercontent.com/pallada-git/assets/main/hdi_logo.png",
+  "Compensa": "https://raw.githubusercontent.com/pallada-git/assets/main/compensa_logo.png",
+  "Wiener": "https://raw.githubusercontent.com/pallada-git/assets/main/wiener_logo.png",
+  "Interrisk": "https://raw.githubusercontent.com/pallada-git/assets/main/interrisk_logo.png",
+  "Generali": "https://raw.githubusercontent.com/pallada-git/assets/main/generali_logo.png",
+  "Allianz": "https://raw.githubusercontent.com/pallada-git/assets/main/allianz_logo.png",
+  "Uniqa": "https://raw.githubusercontent.com/pallada-git/assets/main/uniqa_logo.png",
+  "MTU": "https://raw.githubusercontent.com/pallada-git/assets/main/mtu_logo.png"
 };
 
 // --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
@@ -495,7 +495,7 @@ const OfertyModule = ({ user }) => {
                       pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
                       resolve();
                   };
-                  img.onerror = resolve; // Ignoruj jeśli błąd
+                  img.onerror = resolve; 
                   img.src = LOGOS[firma];
               });
           }
@@ -715,10 +715,6 @@ const OfertyModule = ({ user }) => {
               }
 
               // --- KROK 4: RYSOWANIE TREŚCI ---
-              
-              // ==========================================
-              // Kolumna 1: Towarzystwo (Wyśrodkowana w pionie i poziomie)
-              // ==========================================
               const colCenterX = 37.5; 
               
               // 1. ZNACZNIK TRYBU (OC/AC)
@@ -791,9 +787,7 @@ const OfertyModule = ({ user }) => {
                   doc.text(typText, startValX + valW, startY + 31.5);
               }
 
-              // ==========================================
               // Kolumna 2: Zakres podstawowy
-              // ==========================================
               let c2Y = startY + 7;
               const drawCheckReal = (text) => {
                   doc.setLineWidth(0.4);
@@ -819,9 +813,7 @@ const OfertyModule = ({ user }) => {
               if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
 
-              // ==========================================
               // Kolumna 3: Rozszerzenia
-              // ==========================================
               let c3Y = startY + 7;
               const drawBulletReal = (text) => {
                   doc.setTextColor(...palladaBlue);
@@ -854,9 +846,7 @@ const OfertyModule = ({ user }) => {
                   }
               });
 
-              // ==========================================
               // Kolumna 4: Składka łączna
-              // ==========================================
               const midY = startY + ((maxY - startY) / 2);
               doc.setTextColor(...slate400);
               doc.setFontSize(6.5);
@@ -929,7 +919,6 @@ const OfertyModule = ({ user }) => {
       doc.setTextColor(...palladaBlue);
       doc.setFontSize(10);
       
-      // WYKORZYSTANIE NAZWY UŻYTKOWNIKA Z EMAILA
       const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
       doc.text(displayName, 195, currentY + 4, { align: 'right' });
       
@@ -937,7 +926,7 @@ const OfertyModule = ({ user }) => {
       doc.setFontSize(6);
       doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
 
-      // DODANA: NUMERACJA STRON NA KAŻDEJ STRONIE
+      // NUMERACJA STRON
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i);
@@ -947,7 +936,6 @@ const OfertyModule = ({ user }) => {
           doc.text(`Strona ${i} z ${totalPages}`, 105, 290, { align: 'center' });
       }
 
-      // Zapis PDF
       doc.save(`Oferta_${oferta.numerOferty.replace(/\//g, '_')}.pdf`);
       setPdfMode(false);
       setValidationError("");
@@ -1264,14 +1252,14 @@ const OfertyModule = ({ user }) => {
                       </div>
 
                       <div className="hidden md:block mt-8">
-                         {validationError && (
-                           <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
-                             <XCircle size={18} /> {validationError}
-                           </div>
-                         )}
-                         <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
-                           <Plus size={26} /> Dodaj wariant
-                         </button>
+                        {validationError && (
+                          <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
+                            <XCircle size={18} /> {validationError}
+                          </div>
+                        )}
+                        <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                          <Plus size={26} /> Dodaj wariant
+                        </button>
                       </div>
                     </div>
 
@@ -1430,14 +1418,14 @@ const OfertyModule = ({ user }) => {
                       </div>
                       
                       <div className="block md:hidden mt-8">
-                         {validationError && (
-                           <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
-                             <XCircle size={18} /> {validationError}
-                           </div>
-                         )}
-                         <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
-                           <Plus size={26} /> Dodaj wariant
-                         </button>
+                        {validationError && (
+                          <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
+                            <XCircle size={18} /> {validationError}
+                          </div>
+                        )}
+                        <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                          <Plus size={26} /> Dodaj wariant
+                        </button>
                       </div>
 
                     </div>
@@ -1505,7 +1493,7 @@ const OfertyModule = ({ user }) => {
                                 return val.map(v => (
                                   <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
                                     {v}
-                                  </span>
+                                  </span> 
                                 ));
                               }
 
@@ -1536,15 +1524,12 @@ const OfertyModule = ({ user }) => {
 
         <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
            <div className="max-w-7xl mx-auto flex justify-between items-center">
-             <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v8.0</span>
+            <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v8.0</span>
              <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
-           </div>
-        </footer>
+          </div>
+       </footer>
       </div>
 
-      {/* ========================================= */}
-      {/* EKRAN ŁADOWANIA PODCZAS TWORZENIA PDF */}
-      {/* ========================================= */}
       {pdfMode && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-200/90 backdrop-blur-sm" data-html2canvas-ignore="true">
           <div className="flex flex-col items-center bg-white p-10 rounded-[3rem] shadow-2xl border border-blue-50 animate-in zoom-in-95">
@@ -1737,7 +1722,6 @@ export default function App() {
         
         const palladaBlue = [0, 103, 177]; 
         const slate500 = [100, 116, 139]; 
-        const slate400 = [148, 163, 184]; 
         const getFont = (preferred) => docPdf.getFontList()[preferred] ? preferred : "helvetica";
         
         if (!pdfAssetsCache.mainLogo) {
@@ -1910,7 +1894,7 @@ export default function App() {
                 key={mod.id}
                 onClick={() => setActiveTab(mod.id)}
                 className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-start text-left group"
-              >
+               >
                 <div className={`${mod.bg} ${mod.color} p-4 rounded-2xl mb-6 group-hover:scale-110 transition-transform`}>
                   <mod.icon size={28} />
                 </div>
@@ -2082,7 +2066,7 @@ export default function App() {
         </div>
         <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto hide-scrollbar">
           {modules.map((mod) => (
-            <button 
+            <button
               key={mod.id}
               onClick={() => setActiveTab(mod.id)}
               className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group ${activeTab === mod.id ? 'bg-blue-50/50 shadow-sm' : 'hover:bg-slate-50'}`}
@@ -2101,13 +2085,13 @@ export default function App() {
         <div className="p-6 mt-auto">
           <div className={`flex items-center gap-4 p-3 bg-slate-50 rounded-[2rem] border border-slate-100 ${!isSidebarOpen && 'justify-center'}`}>
             <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100 shrink-0">
-               <UserCircle size={24} className="text-[#0067b1]" />
-            </div>
-            {isSidebarOpen && (
+              <UserCircle size={24} className="text-[#0067b1]" />
+           </div>
+           {isSidebarOpen && (
               <div className="overflow-hidden">
                 <p className="text-xs font-black text-slate-800 truncate">{user ? getUserDisplayName(user.email) : "Bartek Żochowski"}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Administrator</p>
-              </div>
+             </div>
             )}
           </div>
           <button onClick={handleLogout} className={`w-full flex items-center gap-4 p-4 mt-4 text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 rounded-2xl transition-all ${!isSidebarOpen && 'justify-center'}`}>
