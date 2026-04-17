@@ -60,7 +60,7 @@ import {
   FilePlus,
   Fingerprint,
   Wrench,
-  Calendar
+  Award
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
@@ -382,24 +382,6 @@ const LoginScreen = ({ onLogin, error }) => {
     );
 };
 
-// --- KOMPONENT: DYNAMICZNE LOGO FIRMY Z FALLBACKIEM NA TEKST ---
-const CompanyLogo = ({ firma }) => {
-  const [imgError, setImgError] = useState(false);
-  const src = LOGOS[firma];
-
-  if (src && !imgError) {
-    return (
-      <img 
-        src={src} 
-        alt={firma} 
-        className="max-h-8 max-w-[130px] object-contain object-center mix-blend-multiply transition-opacity duration-300" 
-        onError={() => setImgError(true)} 
-      />
-    );
-  }
-  return <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em] text-center">{firma}</h3>;
-};
-
 
 // --- MODUŁ OFERTOWANIA (NATYWNY PDF) ---
 const OfertyModule = ({ user }) => {
@@ -407,6 +389,7 @@ const OfertyModule = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
+  const [pdfLoadingMessage, setPdfLoadingMessage] = useState("Generowanie PDF...");
   
   const konfiguratorRef = useRef(null);
 
@@ -452,149 +435,225 @@ const OfertyModule = ({ user }) => {
     }
   }, [user]);
 
-  // LOGIKA NATYWNEGO GENEROWANIA PDF W JSPDF + ZAAWANSOWANY CACHE
+
+  // FUNKCJA WSPOMAGAJĄCA ŁADOWANIE ZASOBÓW DO PDF
+  const preparePdfAssets = async (doc, specificFirms = null) => {
+    const loadFontWithCache = async (url, filename, fontName, fontStyle) => {
+        if (!pdfAssetsCache.fonts[filename]) {
+            try {
+                const response = await fetch(url);
+                const buffer = await response.arrayBuffer();
+                let binary = '';
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                pdfAssetsCache.fonts[filename] = window.btoa(binary);
+            } catch (e) { console.error("Błąd ładowania czcionki", e); }
+        }
+        if (pdfAssetsCache.fonts[filename]) {
+            doc.addFileToVFS(filename, pdfAssetsCache.fonts[filename]);
+            doc.addFont(filename, fontName, fontStyle);
+        }
+    };
+    
+    await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
+    await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
+    await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
+
+    let firmsToLoad = specificFirms || [...new Set(oferta.warianty.map(w => w.firma))];
+    const preloadedLogos = {};
+    
+    for (const firma of firmsToLoad) {
+        if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
+            await new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
+                    resolve();
+                };
+                img.onerror = resolve; 
+                img.src = LOGOS[firma];
+            });
+        }
+        if (pdfAssetsCache.logos[firma]) {
+            preloadedLogos[firma] = pdfAssetsCache.logos[firma];
+        }
+    }
+
+    if (!pdfAssetsCache.mainLogo) {
+        await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
+                resolve();
+            };
+            img.onerror = resolve;
+            img.src = pallada_trans_logo;
+        });
+    }
+
+    return preloadedLogos;
+  }
+
+  // WSPÓLNA FUNKCJA RYSUJĄCA NAGŁÓWEK
+  const drawStandardHeader = (doc, titleText) => {
+    const palladaBlue = [0, 103, 177];
+    const slate800 = [30, 41, 59];
+    const slate500 = [100, 116, 139];
+    const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
+
+    if (pdfAssetsCache.mainLogo) {
+        const ml = pdfAssetsCache.mainLogo;
+        doc.addImage(ml.img, 'PNG', 15, 15, 28 * ml.ratio, 28, undefined, 'FAST');
+    } else {
+        doc.setFont(getFont("Semplicita"), "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(...palladaBlue);
+        doc.text("PALLADA", 15, 28);
+    }
+
+    doc.setFont(getFont("Kiro"), "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...slate800);
+    doc.text(titleText, 195, 20, { align: 'right' });
+    
+    doc.setFontSize(7);
+    doc.setTextColor(...slate500);
+    doc.setFont(getFont("Kiro"), "normal");
+    doc.text(`Nr kalkulacji:`, 155, 26, { align: 'right' });
+    doc.setFont(getFont("Kiro"), "bold");
+    doc.setTextColor(...slate800);
+    doc.text(oferta.numerOferty, 195, 26, { align: 'right' });
+
+    doc.setFont(getFont("Kiro"), "normal");
+    doc.setTextColor(...slate500);
+    doc.text(`Data kalkulacji:`, 155, 30, { align: 'right' });
+    doc.setFont(getFont("Kiro"), "bold");
+    doc.setTextColor(...slate800);
+    doc.text(oferta.dataKalkulacji, 195, 30, { align: 'right' });
+
+    doc.setDrawColor(...palladaBlue);
+    doc.setLineWidth(0.6);
+    doc.line(15, 45, 195, 45);
+  };
+
+  // WSPÓLNA FUNKCJA RYSUJĄCA DANE POJAZDU/KLIENTA
+  const drawMetadata = (doc, currentY) => {
+    const slate800 = [30, 41, 59];
+    const slate400 = [148, 163, 184];
+    const slate200 = [226, 232, 240];
+    const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
+
+    const drawMetaRow = (label, value, label2, value2, y) => {
+        doc.setDrawColor(...slate200);
+        doc.setLineWidth(0.2);
+        doc.line(15, y + 2, 195, y + 2);
+        
+        doc.setFontSize(8);
+        doc.setFont(getFont("Kiro"), "bold");
+        doc.setTextColor(...slate400);
+        doc.text(label, 15, y);
+        doc.setFont(getFont("Kiro"), "bold");
+        doc.setTextColor(...slate800);
+        doc.text((value || '-').toUpperCase(), 45, y);
+        
+        if (label2) {
+            doc.setFont(getFont("Kiro"), "bold");
+            doc.setTextColor(...slate400);
+            doc.text(label2, 105, y);
+            doc.setFont(getFont("Kiro"), "bold");
+            doc.setTextColor(...slate800);
+            doc.text((value2 || '-').toUpperCase(), 130, y);
+        }
+    };
+
+    drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, "Ubezpieczony:", oferta.klient.nazwa, currentY);
+    currentY += 6;
+    drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, oferta.klient.czyLeasing ? "Właściciel:" : "", oferta.klient.czyLeasing ? oferta.klient.wlasciciel : "", currentY);
+    currentY += 6;
+    drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
+    currentY += 14;
+
+    return currentY;
+  };
+
+  // WSPÓLNA FUNKCJA RYSUJĄCA STOPKĘ
+  const drawStandardFooter = (doc, currentY, withPageNumbers = true) => {
+    const palladaBlue = [0, 103, 177];
+    const slate800 = [30, 41, 59];
+    const slate500 = [100, 116, 139];
+    const slate400 = [148, 163, 184];
+    const slate200 = [226, 232, 240];
+    const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
+
+    if (currentY > 250) {
+        doc.addPage();
+        currentY = 20;
+    }
+    
+    currentY += 10;
+    doc.setDrawColor(...slate200);
+    doc.setLineWidth(0.2);
+    doc.line(15, currentY, 195, currentY);
+    
+    currentY += 6;
+    doc.setTextColor(...slate800);
+    doc.setFontSize(6);
+    doc.setFont(getFont("Kiro"), "bold");
+    doc.text("INFORMACJA PRAWNA", 15, currentY);
+    doc.setTextColor(...slate500);
+    doc.setFont(getFont("Kiro"), "normal");
+    doc.text("Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji", 15, currentY + 4);
+    doc.text("historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.", 15, currentY + 7);
+
+    doc.setTextColor(...slate400);
+    doc.setFontSize(5);
+    doc.setFont(getFont("Kiro"), "bold");
+    doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
+    doc.setTextColor(...palladaBlue);
+    doc.setFontSize(10);
+    
+    const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
+    doc.text(displayName, 195, currentY + 4, { align: 'right' });
+    
+    doc.setTextColor(71, 85, 105);
+    doc.setFontSize(6);
+    doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
+
+    if (withPageNumbers) {
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(7);
+            doc.setTextColor(...slate400); 
+            doc.setFont(getFont("Kiro"), "normal");
+            doc.text(`Strona ${i} z ${totalPages}`, 105, 290, { align: 'center' });
+        }
+    }
+  };
+
+
+  // --- GENERATOR ZESTAWIENIA WSZYSTKICH OFERT (GŁÓWNY) ---
   const handleGeneratePdfNative = async () => {
     setPdfMode(true);
+    setPdfLoadingMessage("Generowanie zestawienia ofert...");
     try {
       await loadJsPdfScript();
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      const loadFontWithCache = async (url, filename, fontName, fontStyle) => {
-          if (!pdfAssetsCache.fonts[filename]) {
-              try {
-                  const response = await fetch(url);
-                  const buffer = await response.arrayBuffer();
-                  let binary = '';
-                  const bytes = new Uint8Array(buffer);
-                  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                  pdfAssetsCache.fonts[filename] = window.btoa(binary);
-              } catch (e) { console.error("Błąd ładowania czcionki", e); }
-          }
-          if (pdfAssetsCache.fonts[filename]) {
-              doc.addFileToVFS(filename, pdfAssetsCache.fonts[filename]);
-              doc.addFont(filename, fontName, fontStyle);
-          }
-      };
-      
-      // Ładowanie czcionek używając Cache
-      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
-      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
-      await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
-
-      // Ładowanie logotypów Towarzystw przy użyciu Cache
-      const uniqueFirms = [...new Set(oferta.warianty.map(w => w.firma))];
-      const preloadedLogos = {};
-      
-      for (const firma of uniqueFirms) {
-          if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
-              await new Promise((resolve) => {
-                  const img = new Image();
-                  img.crossOrigin = "Anonymous";
-                  img.onload = () => {
-                      pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
-                      resolve();
-                  };
-                  img.onerror = resolve; // Ignoruj jeśli błąd
-                  img.src = LOGOS[firma];
-              });
-          }
-          if (pdfAssetsCache.logos[firma]) {
-              preloadedLogos[firma] = pdfAssetsCache.logos[firma];
-          }
-      }
-
-      // Ładowanie Loga Pallada
-      if (!pdfAssetsCache.mainLogo) {
-          await new Promise((resolve) => {
-              const img = new Image();
-              img.crossOrigin = "Anonymous";
-              img.onload = () => {
-                  pdfAssetsCache.mainLogo = { img, ratio: img.width / img.height };
-                  resolve();
-              };
-              img.onerror = resolve;
-              img.src = pallada_trans_logo;
-          });
-      }
-
+      const preloadedLogos = await preparePdfAssets(doc);
+      const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
       const palladaBlue = [0, 103, 177];
       const slate800 = [30, 41, 59];
-      const slate500 = [100, 116, 139];
       const slate400 = [148, 163, 184];
-      const slate200 = [226, 232, 240];
       const blue50 = [239, 246, 255];
-      const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
 
-      // 1. Logo i nagłówek
-      if (pdfAssetsCache.mainLogo) {
-          const ml = pdfAssetsCache.mainLogo;
-          doc.addImage(ml.img, 'PNG', 15, 15, 28 * ml.ratio, 28, undefined, 'FAST');
-      } else {
-          doc.setFont(getFont("Semplicita"), "bold");
-          doc.setFontSize(22);
-          doc.setTextColor(...palladaBlue);
-          doc.text("PALLADA", 15, 28);
-      }
+      drawStandardHeader(doc, "PROPOZYCJA UBEZPIECZENIA POJAZDU");
+      let currentY = drawMetadata(doc, 52);
 
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(...slate800);
-      doc.text("PROPOZYCJA UBEZPIECZENIA POJAZDU", 195, 20, { align: 'right' });
-      
-      doc.setFontSize(7);
-      doc.setTextColor(...slate500);
-      doc.setFont(getFont("Kiro"), "normal");
-      doc.text(`Nr kalkulacji:`, 155, 26, { align: 'right' });
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.setTextColor(...slate800);
-      doc.text(oferta.numerOferty, 195, 26, { align: 'right' });
-
-      doc.setFont(getFont("Kiro"), "normal");
-      doc.setTextColor(...slate500);
-      doc.text(`Data kalkulacji:`, 155, 30, { align: 'right' });
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.setTextColor(...slate800);
-      doc.text(oferta.dataKalkulacji, 195, 30, { align: 'right' });
-
-      // Gruba niebieska linia
-      doc.setDrawColor(...palladaBlue);
-      doc.setLineWidth(0.6);
-      doc.line(15, 45, 195, 45);
-
-      // 2. Metadane
-      let currentY = 52;
-      const drawMetaRow = (label, value, label2, value2, y) => {
-          doc.setDrawColor(...slate200);
-          doc.setLineWidth(0.2);
-          doc.line(15, y + 2, 195, y + 2);
-          
-          doc.setFontSize(8);
-          doc.setFont(getFont("Kiro"), "bold");
-          doc.setTextColor(...slate400);
-          doc.text(label, 15, y);
-          doc.setFont(getFont("Kiro"), "bold");
-          doc.setTextColor(...slate800);
-          doc.text((value || '-').toUpperCase(), 45, y);
-          
-          if (label2) {
-              doc.setFont(getFont("Kiro"), "bold");
-              doc.setTextColor(...slate400);
-              doc.text(label2, 105, y);
-              doc.setFont(getFont("Kiro"), "bold");
-              doc.setTextColor(...slate800);
-              doc.text((value2 || '-').toUpperCase(), 130, y);
-          }
-      };
-
-      drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, "Ubezpieczony:", oferta.klient.nazwa, currentY);
-      currentY += 6;
-      drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, oferta.klient.czyLeasing ? "Właściciel:" : "", oferta.klient.czyLeasing ? oferta.klient.wlasciciel : "", currentY);
-      currentY += 6;
-      drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
-      currentY += 14;
-
-      // 3. Warianty - Rysowanie tabeli
+      // Warianty - Rysowanie tabeli
       if (oferta.warianty.length > 0) {
           let tableStartY = currentY;
           let pageSeparators = [];
@@ -716,12 +775,8 @@ const OfertyModule = ({ user }) => {
 
               // --- KROK 4: RYSOWANIE TREŚCI ---
               
-              // ==========================================
-              // Kolumna 1: Towarzystwo (Wyśrodkowana w pionie i poziomie)
-              // ==========================================
+              // Kolumna 1: Towarzystwo
               const colCenterX = 37.5; 
-              
-              // 1. ZNACZNIK TRYBU (OC/AC)
               doc.setFillColor(...palladaBlue);
               const tagW = 16;
               doc.roundedRect(colCenterX - (tagW / 2), startY + 4, tagW, 4.5, 1, 1, 'F'); 
@@ -729,27 +784,21 @@ const OfertyModule = ({ user }) => {
               doc.setFontSize(6);
               doc.text(w.tryb, colCenterX, startY + 7.2, { align: 'center' });
               
-              // 2. LOGO POD ZNACZNIKIEM
               const logoData = preloadedLogos[w.firma];
               if (logoData) {
                   const powieksozneLoga = ["PZU S.A.", "Interrisk", "Compensa", "Warta"];
                   const isBigger = powieksozneLoga.includes(w.firma);
-                  
                   let maxW = isBigger ? 28 : 24;
                   let maxH = isBigger ? 13 : 11;
-                  
                   let logoW = maxW;
                   let logoH = logoW / logoData.ratio;
-                  
                   if (logoH > maxH) {
                       logoH = maxH;
                       logoW = logoH * logoData.ratio;
                   }
-                  
                   let logoX = colCenterX - (logoW / 2);
                   let spaceY = 15.5; 
                   let logoY = startY + 8.5 + (spaceY - logoH) / 2;
-                  
                   doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
               } else {
                   doc.setTextColor(...palladaBlue);
@@ -759,7 +808,6 @@ const OfertyModule = ({ user }) => {
                   doc.text(fNameLines, colCenterX, startY + 16, { align: 'center' });
               }
               
-              // 3. SUMA UBEZPIECZENIA POD LOGIEM
               if (w.tryb !== 'OC') {
                   doc.setTextColor(...slate400);
                   doc.setFontSize(6);
@@ -791,19 +839,15 @@ const OfertyModule = ({ user }) => {
                   doc.text(typText, startValX + valW, startY + 31.5);
               }
 
-              // ==========================================
               // Kolumna 2: Zakres podstawowy
-              // ==========================================
               let c2Y = startY + 7;
               const drawCheckReal = (text) => {
                   doc.setLineWidth(0.4);
                   doc.setDrawColor(...palladaBlue);
                   doc.circle(63.5, c2Y - 0.7, 2.2, 'S'); 
-                  
                   doc.setLineWidth(0.5); 
                   doc.line(62.2, c2Y - 0.7, 63.2, c2Y + 0.3);
                   doc.line(63.2, c2Y + 0.3, 64.8, c2Y - 1.5);
-
                   doc.setTextColor(...slate800);
                   doc.setFontSize(7.5);
                   doc.setFont(getFont("Kiro"), "bold");
@@ -813,21 +857,16 @@ const OfertyModule = ({ user }) => {
 
               if (w.tryb !== 'AC') drawCheckReal("Ubezpieczenie OC");
               if (w.tryb !== 'OC') drawCheckReal("Autocasco (AC)");
-              if (w.dodatki['nnw']) {
-                  drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
-              }
+              if (w.dodatki['nnw']) drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
               if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
 
-              // ==========================================
               // Kolumna 3: Rozszerzenia
-              // ==========================================
               let c3Y = startY + 7;
               const drawBulletReal = (text) => {
                   doc.setTextColor(...palladaBlue);
                   doc.setFontSize(10);
                   doc.text("•", 107, c3Y);
-                  
                   doc.setTextColor(71, 85, 105);
                   doc.setFontSize(7);
                   doc.setFont(getFont("Kiro"), "normal");
@@ -854,9 +893,7 @@ const OfertyModule = ({ user }) => {
                   }
               });
 
-              // ==========================================
               // Kolumna 4: Składka łączna
-              // ==========================================
               const midY = startY + ((maxY - startY) / 2);
               doc.setTextColor(...slate400);
               doc.setFontSize(6.5);
@@ -901,63 +938,289 @@ const OfertyModule = ({ user }) => {
           drawFrameAndHeader(tableStartY, currentY, isContinued);
       }
 
-      // 4. Stopka
-      if (currentY > 250) {
-          doc.addPage();
-          currentY = 20;
-      }
-      
-      currentY += 10;
-      doc.setDrawColor(...slate200);
-      doc.setLineWidth(0.2);
-      doc.line(15, currentY, 195, currentY);
-      
-      currentY += 6;
-      doc.setTextColor(...slate800);
-      doc.setFontSize(6);
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.text("INFORMACJA PRAWNA", 15, currentY);
-      doc.setTextColor(...slate500);
-      doc.setFont(getFont("Kiro"), "normal");
-      doc.text("Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji", 15, currentY + 4);
-      doc.text("historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.", 15, currentY + 7);
+      drawStandardFooter(doc, currentY);
 
-      doc.setTextColor(...slate400);
-      doc.setFontSize(5);
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
-      doc.setTextColor(...palladaBlue);
-      doc.setFontSize(10);
-      
-      // WYKORZYSTANIE NAZWY UŻYTKOWNIKA Z EMAILA
-      const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
-      doc.text(displayName, 195, currentY + 4, { align: 'right' });
-      
-      doc.setTextColor(71, 85, 105);
-      doc.setFontSize(6);
-      doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
-
-      // DODANA: NUMERACJA STRON NA KAŻDEJ STRONIE
-      const totalPages = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-          doc.setPage(i);
-          doc.setFontSize(7);
-          doc.setTextColor(...slate400); 
-          doc.setFont(getFont("Kiro"), "normal");
-          doc.text(`Strona ${i} z ${totalPages}`, 105, 290, { align: 'center' });
-      }
-
-      // Zapis PDF
       doc.save(`Oferta_${oferta.numerOferty.replace(/\//g, '_')}.pdf`);
       setPdfMode(false);
       setValidationError("");
 
     } catch (err) {
       console.error("PDF Native Error:", err);
-      setValidationError("Błąd podczas generowania natywnego pliku PDF.");
+      setValidationError("Błąd podczas generowania pliku PDF.");
       setPdfMode(false);
     }
   };
+
+
+  // --- GENERATOR SZCZEGÓŁOWEJ OFERTY DLA POJEDYNCZEGO WARIANTU ---
+  const handleGenerateSinglePdfNative = async (wariant) => {
+    setPdfMode(true);
+    setPdfLoadingMessage("Generowanie rekomendacji...");
+    try {
+      await loadJsPdfScript();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      
+      const preloadedLogos = await preparePdfAssets(doc, [wariant.firma]);
+      const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
+      const palladaBlue = [0, 103, 177];
+      const slate800 = [30, 41, 59];
+      const slate500 = [100, 116, 139];
+      const slate400 = [148, 163, 184];
+      const blue50 = [239, 246, 255];
+      const white = [255, 255, 255];
+
+      // --- STRONA 1: PODSUMOWANIE ---
+      drawStandardHeader(doc, "REKOMENDOWANA OFERTA");
+      let currentY = drawMetadata(doc, 52);
+
+      currentY += 5;
+
+      // Hero Section (Duży niebieski blok ze składką i logo)
+      doc.setFillColor(...palladaBlue);
+      doc.roundedRect(15, currentY, 180, 45, 3, 3, 'F');
+      
+      doc.setTextColor(...white);
+      doc.setFontSize(8);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("REKOMENDOWANY UBEZPIECZYCIEL", 25, currentY + 12);
+      
+      const logoData = preloadedLogos[wariant.firma];
+      if (logoData) {
+          // Rysowanie białego tła pod logo żeby było widoczne na niebieskim
+          doc.setFillColor(...white);
+          doc.roundedRect(25, currentY + 16, 45, 20, 2, 2, 'F');
+          
+          let maxW = 35;
+          let maxH = 14;
+          let logoW = maxW;
+          let logoH = logoW / logoData.ratio;
+          if (logoH > maxH) {
+              logoH = maxH;
+              logoW = logoH * logoData.ratio;
+          }
+          let logoX = 25 + (45 - logoW) / 2;
+          let logoY = currentY + 16 + (20 - logoH) / 2;
+          doc.addImage(logoData.img, 'PNG', logoX, logoY, logoW, logoH, undefined, 'FAST');
+      } else {
+          doc.setFontSize(14);
+          doc.text(wariant.firma.toUpperCase(), 25, currentY + 26);
+      }
+
+      doc.setFontSize(8);
+      doc.setTextColor(204, 224, 239); // Jasny niebieski
+      doc.text("SKŁADKA ZA WSKAZANY ZAKRES:", 190, currentY + 15, { align: 'right' });
+      
+      const priceParts = wariant.skladka.split(',');
+      const priceStr1 = priceParts[0];
+      const priceStr2 = `,${priceParts[1] || '00'} PLN`;
+      
+      doc.setFontSize(28);
+      doc.setTextColor(...white);
+      doc.setFont(getFont("Kiro"), "bold");
+      const p1Width = doc.getTextWidth(priceStr1);
+      doc.setFontSize(12);
+      const p2Width = doc.getTextWidth(priceStr2);
+      
+      const totalPWidth = p1Width + p2Width;
+      const startX = 190 - totalPWidth;
+      
+      doc.setFontSize(28);
+      doc.text(priceStr1, startX, currentY + 28);
+      doc.setFontSize(12);
+      doc.text(priceStr2, startX + p1Width, currentY + 28);
+
+      const ratyText = wariant.liczbaRat === 1 ? 'PŁATNOŚĆ JEDNORAZOWA' : `W ${wariant.liczbaRat} ratach po ok. ${calculateInstallment(wariant.skladka, wariant.liczbaRat)} PLN`;
+      doc.setFontSize(8);
+      doc.text(ratyText, 190, currentY + 36, { align: 'right' });
+
+      currentY += 55;
+
+      // Sekcja Podsumowania Zakresu
+      doc.setTextColor(...slate800);
+      doc.setFontSize(12);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("Podsumowanie zakresu ochrony", 15, currentY);
+      currentY += 8;
+
+      const drawDetailRow = (label, valueObj, startY, isBlue = false) => {
+          if (isBlue) {
+              doc.setFillColor(...blue50);
+              doc.rect(15, startY, 180, 10, 'F');
+          }
+          doc.setTextColor(...slate500);
+          doc.setFontSize(9);
+          doc.setFont(getFont("Kiro"), "bold");
+          doc.text(label, 20, startY + 6.5);
+
+          let currentValY = startY + 6.5;
+          doc.setTextColor(...slate800);
+          doc.setFontSize(9);
+
+          if (typeof valueObj === 'string') {
+              doc.setFont(getFont("Kiro"), "bold");
+              const lines = doc.splitTextToSize(valueObj, 110);
+              doc.text(lines, 75, currentValY);
+              return startY + Math.max(10, lines.length * 5 + 4);
+          } else if (Array.isArray(valueObj)) {
+             let rowH = 10;
+             valueObj.forEach((item, idx) => {
+                 if (item.bullet) {
+                     doc.setTextColor(...palladaBlue);
+                     doc.text("•", 75, currentValY);
+                     doc.setTextColor(...slate800);
+                     doc.setFont(getFont("Kiro"), "normal");
+                     const lines = doc.splitTextToSize(item.text, 105);
+                     doc.text(lines, 79, currentValY);
+                     currentValY += lines.length * 4.5;
+                 } else {
+                     doc.setFont(getFont("Kiro"), "bold");
+                     const lines = doc.splitTextToSize(item.text, 110);
+                     doc.text(lines, 75, currentValY);
+                     currentValY += lines.length * 4.5;
+                 }
+             });
+             return startY + Math.max(10, currentValY - (startY + 6.5) + 4);
+          }
+      };
+
+      let isBlueRow = true;
+      currentY = drawDetailRow("Zakres oferty:", wariant.tryb, currentY, isBlueRow); isBlueRow = !isBlueRow;
+      
+      if (wariant.tryb !== 'OC') {
+          currentY = drawDetailRow("Suma ubezpieczenia AC:", `${wariant.sumaUbezpieczenia} PLN (${wariant.typSumy})`, currentY, isBlueRow); isBlueRow = !isBlueRow;
+          
+          let naprawaTxt = `Naprawa w wariancie: ${wariant.zakresAC?.metodaNaprawy || ''}`;
+          if (wariant.firma === 'Warta' && wariant.zakresAC?.metodaNaprawy === 'ASO' && wariant.zakresAC?.wariantWarta) {
+              naprawaTxt = `Naprawa w wariancie: ASO (Warta ${wariant.zakresAC.wariantWarta})`;
+          }
+          
+          let acDetails = [{ text: naprawaTxt, bullet: false }];
+          if (wariant.zakresAC?.stalaSuma) acDetails.push({ text: "Gwarantowana stała wartość pojazdu (brak utraty wartości)", bullet: true });
+          if (wariant.zakresAC?.nieredukcyjna) acDetails.push({ text: "Brak redukcji sumy ubezpieczenia po szkodzie", bullet: true });
+          
+          currentY = drawDetailRow("Szczegóły AC:", acDetails, currentY, isBlueRow); isBlueRow = !isBlueRow;
+      }
+
+      if (wariant.dodatki['car_ass'] || wariant.dodatki['ass'] || wariant.dodatki['warta_pomoc']) {
+          const assName = wariant.dodatki['car_ass'] || wariant.dodatki['warta_pomoc'] || wariant.dodatki['ass'];
+          const txt = typeof assName === 'string' && assName !== 'true' ? assName : "Wybrane";
+          currentY = drawDetailRow("Wariant Assistance:", txt, currentY, isBlueRow); isBlueRow = !isBlueRow;
+      }
+
+      if (wariant.dodatki['nnw']) {
+          const nnwTxt = typeof wariant.dodatki['nnw'] === 'string' && wariant.dodatki['nnw'] !== 'true' ? wariant.dodatki['nnw'] : "Wybrane";
+          currentY = drawDetailRow("Suma ubezp. NNW:", nnwTxt, currentY, isBlueRow); isBlueRow = !isBlueRow;
+      }
+
+      if (wariant.dodatki['szyby']) {
+          const szybyTxt = typeof wariant.dodatki['szyby'] === 'string' && wariant.dodatki['szyby'] !== 'true' ? wariant.dodatki['szyby'] : "Wykupione";
+          currentY = drawDetailRow("Ubezpieczenie Szyb:", szybyTxt, currentY, isBlueRow); isBlueRow = !isBlueRow;
+      }
+
+      // Sprawdzenie czy dodać klauzule na pierwszej stronie jeśli mało
+      let otherDodatki = [];
+      Object.entries(wariant.dodatki).forEach(([id, val]) => {
+          if (!val || ['nnw', 'ass', 'car_ass', 'szyby', 'warta_pomoc'].includes(id)) return;
+          const dKonfig = (DODATKI_KONFIG[wariant.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+          if (!dKonfig) return;
+          if (Array.isArray(val)) {
+             otherDodatki.push(`Pakiet: ${dKonfig.label} (${val.length} klauzul) - szczegóły na str. 2`);
+          } else {
+             const lbl = (typeof val === 'string' && val !== 'true') ? `${dKonfig.label}: ${val}` : dKonfig.label;
+             otherDodatki.push(lbl);
+          }
+      });
+
+      if (otherDodatki.length > 0) {
+          let list = otherDodatki.map(d => ({ text: d, bullet: true }));
+          currentY = drawDetailRow("Pozostałe opcje:", list, currentY, isBlueRow); isBlueRow = !isBlueRow;
+      }
+
+      drawStandardFooter(doc, currentY);
+
+      // --- STRONA 2: SZCZEGÓŁOWY WYKAZ ROZSZERZEŃ (Ikony / Ptaszki) ---
+      doc.addPage();
+      currentY = 20;
+      
+      doc.setTextColor(...slate800);
+      doc.setFontSize(14);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("Rozszerz swoją ochronę ubezpieczenia", 15, currentY);
+      doc.setFontSize(9);
+      doc.setTextColor(...slate400);
+      doc.setFont(getFont("Kiro"), "normal");
+      doc.text("Zestawienie wybranych klauzul i rozszerzeń w ramach Twojej polisy", 15, currentY + 6);
+      
+      currentY += 18;
+
+      const drawCheckItem = (text, startY) => {
+          doc.setLineWidth(0.4);
+          doc.setDrawColor(...palladaBlue);
+          doc.circle(18, startY - 1, 2.5, 'S'); 
+          doc.setLineWidth(0.6); 
+          doc.line(16.5, startY - 1, 17.8, startY + 0.3);
+          doc.line(17.8, startY + 0.3, 19.8, startY - 2);
+
+          doc.setTextColor(...slate800);
+          doc.setFontSize(8.5);
+          doc.setFont(getFont("Kiro"), "bold");
+          const lines = doc.splitTextToSize(text, 160);
+          doc.text(lines, 24, startY);
+          return startY + (lines.length * 5) + 2;
+      };
+
+      if (wariant.tryb !== 'AC') currentY = drawCheckItem("Ubezpieczenie Odpowiedzialności Cywilnej (OC) posiadaczy pojazdów", currentY);
+      if (wariant.tryb !== 'OC') {
+          currentY = drawCheckItem("Ubezpieczenie Autocasco (AC)", currentY);
+          
+          if(wariant.zakresAC?.stalaSuma) currentY = drawCheckItem("Stała Wartość Pojazdu - utrzymanie sumy ubezpieczenia przez cały rok", currentY);
+          if(wariant.zakresAC?.nieredukcyjna) currentY = drawCheckItem("Brak redukcji sumy ubezpieczenia po wypłacie odszkodowania", currentY);
+          if(wariant.zakresAC?.metodaNaprawy) {
+              let nTxt = `Bezgotówkowe rozliczenie i naprawa w wariancie: ${wariant.zakresAC.metodaNaprawy}`;
+              if (wariant.firma === 'Warta' && wariant.zakresAC.metodaNaprawy === 'ASO' && wariant.zakresAC.wariantWarta) nTxt += ` (Warta ${wariant.zakresAC.wariantWarta})`;
+              currentY = drawCheckItem(nTxt, currentY);
+          }
+      }
+
+      Object.entries(wariant.dodatki).forEach(([id, val]) => {
+          if (!val) return;
+          const dKonfig = (DODATKI_KONFIG[wariant.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+          const label = dKonfig ? dKonfig.label : id;
+          
+          if (Array.isArray(val)) {
+              currentY += 3;
+              doc.setTextColor(...palladaBlue);
+              doc.setFontSize(10);
+              doc.setFont(getFont("Kiro"), "bold");
+              doc.text(label.toUpperCase(), 15, currentY);
+              currentY += 7;
+              
+              val.forEach(v => {
+                  if (currentY > 260) { doc.addPage(); currentY = 20; }
+                  currentY = drawCheckItem(v, currentY);
+              });
+              currentY += 3;
+          } else {
+              if (currentY > 260) { doc.addPage(); currentY = 20; }
+              const displayVal = (typeof val === 'string' && val !== 'true') ? `${label}: ${val}` : label;
+              currentY = drawCheckItem(displayVal, currentY);
+          }
+      });
+
+      drawStandardFooter(doc, currentY);
+
+      doc.save(`Rekomendacja_${oferta.numerOferty.replace(/\//g, '_')}_${wariant.firma.replace(/\s/g, '')}.pdf`);
+      setPdfMode(false);
+      setValidationError("");
+
+    } catch (err) {
+      console.error("PDF Native Error:", err);
+      setValidationError("Błąd podczas generowania rekomendacji PDF.");
+      setPdfMode(false);
+    }
+  };
+
 
   const handleInputChange = (section, field, value, formatFn) => {
     let finalValue = value;
@@ -1305,7 +1568,6 @@ const OfertyModule = ({ user }) => {
                               ))}
                             </div>
 
-                            {/* WARTA ASO - DODATKOWY WYBÓR WARIANTU */}
                             {nowyWariant.firma === 'Warta' && nowyWariant.zakresAC.metodaNaprawy === 'ASO' && (
                               <div className="animate-in fade-in slide-in-from-top-2">
                                 <div className="flex gap-2 p-1.5 bg-blue-50/80 rounded-2xl border border-blue-100 shadow-inner">
@@ -1458,27 +1720,28 @@ const OfertyModule = ({ user }) => {
                       {saving ? <Loader2 className="animate-spin" size={18} /> : <Save className="text-[#0067b1]" size={18}/>} Zapisz ofertę 
                     </button>
                     <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"> 
-                      <FileText size={18} /> Generuj PDF oferty
+                      <FileText size={18} /> Zestawienie PDF
                     </button>
                   </div>
                 </div>
 
                 <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
                   {oferta.warianty.map(w => (
-                    <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
-                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
+                    <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col animate-in zoom-in-95 group">
+                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center relative">
                         <div className="flex flex-col gap-1">
-                          <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em]">{w.firma}</h3>
+                          <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em] pr-20">{w.firma}</h3>
                           <div className="flex gap-2">
                             <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
                           </div>
                         </div>
-                        <div className="flex gap-1.5">
-                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={20} /> </button>
-                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={20} /> </button>
+                        <div className="flex gap-1 absolute right-5 top-5">
+                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-2 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={16} /> </button>
+                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-2 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={16} /> </button>
                         </div>
                       </div>
-                      <div className="p-8 flex-1 flex flex-col justify-between bg-white">
+                      
+                      <div className="p-8 flex-1 flex flex-col justify-start bg-white">
                         <div className="space-y-4">
                           {w.tryb !== 'OC' && (
                             <div className="flex justify-between items-center border-b border-slate-50 pb-5 mb-5 uppercase">
@@ -1519,13 +1782,26 @@ const OfertyModule = ({ user }) => {
                             })}
                           </div>
                         </div>
-                        <div className="pt-10 border-t border-slate-100 text-center mt-8">
-                           <div className="flex items-center justify-center gap-1">
-                            <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
-                            <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
-                           </div>
-                        </div>
                       </div>
+
+                      {/* STOPKA KARTY ZE SKŁADKĄ I PRZYCISKIEM PDF */}
+                      <div className="bg-slate-50/50 border-t border-slate-100 p-6 pt-5">
+                          <div className="text-center mb-5">
+                             <div className="flex items-center justify-center gap-1">
+                              <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
+                              <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
+                             </div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleGenerateSinglePdfNative(w)}
+                            className="w-full bg-white border border-[#0067b1]/20 hover:border-[#0067b1] text-[#0067b1] py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm group-hover:bg-[#0067b1] group-hover:text-white"
+                          >
+                            <Award size={14} className="group-hover:animate-pulse" /> 
+                            <span>OFERTA PDF</span>
+                          </button>
+                      </div>
+
                     </div>
                   ))}
                 </div>
@@ -1549,7 +1825,7 @@ const OfertyModule = ({ user }) => {
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-200/90 backdrop-blur-sm" data-html2canvas-ignore="true">
           <div className="flex flex-col items-center bg-white p-10 rounded-[3rem] shadow-2xl border border-blue-50 animate-in zoom-in-95">
             <Loader2 className="animate-spin text-[#0067b1] mb-6" size={56} />
-            <p className="text-sm font-black text-[#0067b1] tracking-[0.2em] uppercase">Generowanie PDF...</p>
+            <p className="text-sm font-black text-[#0067b1] tracking-[0.2em] uppercase">{pdfLoadingMessage}</p>
             <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">To zajmie tylko chwilę</p>
           </div>
         </div>
