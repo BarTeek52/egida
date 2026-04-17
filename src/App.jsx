@@ -51,16 +51,13 @@ import {
   Building2,
   Settings2,
   PackagePlus,
-  UserPlus,
-  ShieldAlert,
-  Briefcase,
-  Star,
   Activity,
   Scale,
   FilePlus,
   Fingerprint,
+  Star,
   Wrench,
-  Calendar
+  ShieldAlert
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
@@ -86,6 +83,58 @@ const pdfAssetsCache = {
   mainLogo: null
 };
 
+// --- DEDYKOWANE IKONY PAKIETÓW (W STYLU LINE-ART) ---
+const CustomAppIcons = {
+  Laweta: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Auto na lawecie */}
+      <path d="M4 11l1.5-2h3.5L10.5 11" />
+      <path d="M2.5 11h8.5v1.5h-8.5z" />
+      <circle cx="4.5" cy="13.5" r="1" />
+      <circle cx="9.5" cy="13.5" r="1" />
+      {/* Konstrukcja lawety */}
+      <path d="M2 15h12" />
+      <circle cx="7" cy="18" r="2" />
+      <circle cx="18" cy="18" r="2" />
+      <path d="M9 18h7" />
+      {/* Kabina ciężarówki */}
+      <path d="M14 15V9h3l3 4v2h-2" />
+    </svg>
+  ),
+  Tarcze: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Tarcza drugoplanowa (z lekkim kryciem) */}
+      <path d="M7 4L3 5.5v6c0 5 4.5 9 8 10.5 1.5-.6 3-1.6 4-3" opacity="0.4"/>
+      {/* Tarcza główna */}
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  Szyba: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Zarys szyby samochodowej */}
+      <path d="M3 19L5 7h14l2 12H3z" />
+      {/* Linia pęknięcia */}
+      <path d="M14 7l-2 4 2 2-3 6" />
+    </svg>
+  ),
+  NNW: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Tarcza ochronna */}
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      {/* Krzyż medyczny */}
+      <path d="M12 8v8" />
+      <path d="M8 12h8" />
+    </svg>
+  ),
+  Bagaz: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="4" y="7" width="16" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M4 12h16" />
+    </svg>
+  )
+};
+
 // --- STAŁE I STYLE (EGIDA) ---
 const TOWARZYSTWA = [
     "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
@@ -102,15 +151,6 @@ const styles = {
   header: { fontFamily: "'Semplicita Pro', sans-serif" },
   body: { fontFamily: "'Kiro', sans-serif" }
 };
-
-// --- SYMBOL: Szyba (OFERTOWANIE) ---
-const WindshieldIcon = ({ size = 20, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M2 18C2 18 3.5 6 12 6C20.5 6 22 18 22 18H2Z" />
-    <path d="M2 18L12 18L22 18" />
-    <path d="M7 11L17 11" />
-  </svg>
-);
 
 // --- LOGO PALLADA (Ścieżka relatywna do folderu public) ---
 const pallada_trans_logo = "/pallada_trans_logo.png"; 
@@ -197,21 +237,21 @@ const KLAUZULE_HESTIA_BAZA = {
   ]
 };
 
-// --- KONFIGURACJA DODATKÓW PER FIRMA (OFERTOWANIE) ---
+// --- KONFIGURACJA DODATKÓW PER FIRMA Z NOWYMI IKONAMI (OFERTOWANIE) ---
 const DODATKI_KONFIG = {
   "PZU S.A.": [
-    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
-    { id: "ass", label: "Assistance", icon: Zap },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] }
   ],
   "Ergo Hestia": [
-    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
-    { id: "car_ass", label: "Assistance", icon: Zap, options: ["Wypadek", "Wypadek i Awaria", "Turbo"] },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
+    { id: "car_ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Wypadek", "Wypadek i Awaria", "Turbo"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { 
       id: "klauzule_katalog", label: "Katalog Klauzul", icon: FilePlus, 
       getMultiOptions: (tryb) => {
@@ -220,15 +260,15 @@ const DODATKI_KONFIG = {
         return KLAUZULE_HESTIA_BAZA.OC_AC;
       }
     },
-    { id: "bagaz", label: "Bagaż", icon: Briefcase },
+    { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz },
     { id: "ochrona_prawna", label: "Ochrona Prawna", icon: Scale }
   ],
   "Ergo Biznes": [
-    { id: "nnw", label: "NNW Biznes", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
-    { id: "car_ass", label: "Assistance Biznes", icon: Zap, options: ["Biznes (Polska)", "Biznes (Europa 200km)", "Biznes (Europa 500km)", "Biznes (Europa 1000km)"] },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw", label: "NNW Biznes", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
+    { id: "car_ass", label: "Assistance Biznes", icon: CustomAppIcons.Laweta, options: ["Biznes (Polska)", "Biznes (Europa 200km)", "Biznes (Europa 500km)", "Biznes (Europa 1000km)"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { 
       id: "klauzule_katalog_biznes", label: "Katalog Klauzul Biznes", icon: FilePlus, 
       getMultiOptions: (tryb) => {
@@ -241,34 +281,34 @@ const DODATKI_KONFIG = {
   ],
   "Warta": [
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
-    { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "warta_pomoc", label: "Warta Pomoc", icon: Zap, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW },
+    { id: "warta_pomoc", label: "Warta Pomoc", icon: CustomAppIcons.Laweta, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] }
   ],
   "HDI": [
-    { id: "nnw", label: "NNW", icon: UserPlus },
-    { id: "ass", label: "Assistance", icon: Zap },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] }
   ],
   "Link4": [
-    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
-    { id: "ass", label: "Auto Assistance", icon: Zap },
-    { id: "szyby", label: "Szyby 24", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "ass", label: "Auto Assistance", icon: CustomAppIcons.Laweta },
+    { id: "szyby", label: "Szyby 24", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car }
   ],
   "Default": [
-    { id: "nnw", label: "NNW", icon: UserPlus, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
-    { id: "ass", label: "Assistance", icon: Zap },
-    { id: "szyby", label: "Szyby", icon: WindshieldIcon, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: ShieldAlert, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: ShieldAlert, showIn: ['AC', 'OC+AC'] }
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] }
   ]
 };
 
@@ -792,31 +832,29 @@ const OfertyModule = ({ user }) => {
                   doc.text(typText, startValX + valW, startY + 31.5);
               }
 
-              // Kolumna 2: Zakres podstawowy
+              // Kolumna 2: Zakres podstawowy (Standardowe ptaszki Pallada)
               let c2Y = startY + 7;
-              const drawCheckReal = (text) => {
-                  doc.setLineWidth(0.4);
+              const drawCheckReal = (text, type) => {
                   doc.setDrawColor(...palladaBlue);
-                  doc.circle(63.5, c2Y - 0.7, 2.2, 'S'); 
+                  doc.setLineWidth(0.3);
+                  doc.circle(62.5, c2Y - 1, 1.8, 'S');
+                  doc.line(61.5, c2Y - 1, 62.2, c2Y - 0.2);
+                  doc.line(62.2, c2Y - 0.2, 63.5, c2Y - 2);
                   
-                  doc.setLineWidth(0.5); 
-                  doc.line(62.2, c2Y - 0.7, 63.2, c2Y + 0.3);
-                  doc.line(63.2, c2Y + 0.3, 64.8, c2Y - 1.5);
-
                   doc.setTextColor(...slate800);
                   doc.setFontSize(7.5);
                   doc.setFont(getFont("Kiro"), "bold");
-                  doc.text(text, 67.5, c2Y);
+                  doc.text(text, 68, c2Y);
                   c2Y += 5.5;
               };
 
-              if (w.tryb !== 'AC') drawCheckReal("Ubezpieczenie OC");
-              if (w.tryb !== 'OC') drawCheckReal("Autocasco (AC)");
+              if (w.tryb !== 'AC') drawCheckReal("Ubezpieczenie OC", "OC");
+              if (w.tryb !== 'OC') drawCheckReal("Autocasco (AC)", "AC");
               if (w.dodatki['nnw']) {
-                  drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)");
+                  drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW (${w.dodatki['nnw']})` : "Następstwa (NNW)", "NNW");
               }
-              if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance");
-              if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb");
+              if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance", "ASS");
+              if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb", "SZYBY");
 
               // Kolumna 3: Rozszerzenia
               let c3Y = startY + 7;
@@ -1217,7 +1255,7 @@ const OfertyModule = ({ user }) => {
                                 return {...prev, dodatki: dod};
                               });
                             }} 
-                            className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
+                            className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
                           > 
                             {id} 
                           </button>
@@ -1358,7 +1396,7 @@ const OfertyModule = ({ user }) => {
                                 return (
                                   <div key={dodatek.id} className="flex flex-col gap-2">
                                     <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
-                                      <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50'}`}><IconComponent size={24} /></div>
+                                      <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50 text-[#0067b1]'}`}><IconComponent size={24} /></div>
                                       <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
                                       {isActive && <CheckCircle2 size={16} className="absolute top-3 right-3 text-white/80" />}
                                     </button>
@@ -1479,34 +1517,43 @@ const OfertyModule = ({ user }) => {
                               <span className="text-[#0067b1] bg-blue-50/80 px-4 py-1.5 rounded-xl font-black text-[11px]">{w.sumaUbezpieczenia} PLN {w.typSumy}</span>
                             </div>
                           )}
-                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Odpowiedzialność OC</span> {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
-                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> <span>Autocasco (AC)</span> {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} </div>
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
+                              <span className="flex items-center gap-1.5">Odpowiedzialność OC</span> 
+                              {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
+                              <span className="flex items-center gap-1.5">Autocasco (AC)</span> 
+                              {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
+                          </div>
                           <div className="flex flex-wrap gap-2 mt-6">
                             {w.tryb !== 'OC' && (
-                              <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1">
+                              <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1 shadow-sm">
                                 <Wrench size={10} /> 
                                 {w.zakresAC.metodaNaprawy}
                                 {w.firma === 'Warta' && w.zakresAC.metodaNaprawy === 'ASO' && w.zakresAC.wariantWarta ? ` (${w.zakresAC.wariantWarta})` : ''}
                               </span>
                             )}
-                            {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1"><Activity size={10} /> Stała Wartość</span>}
+                            {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 shadow-sm"><Activity size={10} /> Stała Wartość</span>}
+                            
                             {Object.entries(w.dodatki).map(([id, val]) => {
                               if (!val || (Array.isArray(val) && val.length === 0)) return null;
                               const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
-                              
+                              const IconComponent = dKonfig && dKonfig.icon ? dKonfig.icon : PackagePlus;
+
                               if (Array.isArray(val)) {
                                 return val.map(v => (
-                                  <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
-                                    {v}
+                                  <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                    <IconComponent size={10} className="shrink-0" /> {v}
                                   </span> 
                                 ));
                               }
 
                               const label = dKonfig ? dKonfig.label : id;
                               const displayVal = (typeof val === 'string' && val !== 'true') ? (id === 'nnw' ? `NNW: ${val}` : `${label}: ${val}`) : label;
+                              
                               return (
-                                <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
-                                  {displayVal}
+                                <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                  <IconComponent size={10} className="shrink-0" /> {displayVal}
                                 </span>
                               );
                             })}
