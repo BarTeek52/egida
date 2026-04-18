@@ -311,6 +311,19 @@ const DODATKI_KONFIG = {
     { id: "pomoc_wypadek", label: "Pomoc po wypadku", icon: AlertCircle },
     { id: "kluczyki_plus", label: "Kluczyki Plus", icon: Wrench }
   ],
+  "Compensa": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["10.000 zł", "15.000 zł", "20.000 zł", "30.000 zł", "60.000 zł", "100.000 zł"] },
+    { id: "nnw_smierc_kier", label: "NNW 5 x SU (Śmierć Kierującego)", icon: UserCircle },
+    { id: "nnw_smierc_pas", label: "NNW 5 x SU (Śmierć Pasażera)", icon: Users },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Baza", "Rozszerzony"] },
+    { id: "ass_auto", label: "ASS Auto Zastępcze", icon: Car, options: ["3 dni", "5 dni", "7 dni", "10 dni", "14 dni", "21 dni"] },
+    { id: "ass_holowanie", label: "ASS Holowanie", icon: MapPin, options: ["Najbliższe ASO", "200 km", "500 km", "750 km", "1100 km", "1500 km"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
+    { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz },
+    { id: "powrot_do_zdrowia", label: "Powrót do zdrowia", icon: Activity }
+  ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
