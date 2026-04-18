@@ -301,12 +301,15 @@ const DODATKI_KONFIG = {
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] }
   ],
   "Link4": [
-    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
-    { id: "ass", label: "Auto Assistance", icon: CustomAppIcons.Laweta },
-    { id: "szyby", label: "Szyby 24", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "20.000 zł", "50.000 zł", "100.000 zł"] },
+    { id: "ass", label: "Auto Assistance", icon: CustomAppIcons.Laweta, options: ["Mini po wypadku", "Standard", "Plus", "Komfort"] },
+    { id: "szyby", label: "Szyby 24", icon: CustomAppIcons.Szyba, options: ["Zamiennik - Suma 5.000 zł", "Oryginał - Suma 5.000 zł"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
-    { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car }
+    { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car },
+    { id: "pomoc_kradziez", label: "Pomoc po kradzieży", icon: ShieldAlert },
+    { id: "pomoc_wypadek", label: "Pomoc po wypadku", icon: AlertCircle },
+    { id: "kluczyki_plus", label: "Kluczyki Plus", icon: Wrench }
   ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
