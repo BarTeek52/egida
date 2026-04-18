@@ -241,10 +241,15 @@ const KLAUZULE_HESTIA_BAZA = {
 const DODATKI_KONFIG = {
   "PZU S.A.": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
-    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
-    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Mini", "Super PL, Wariant Podstawowy", "Super PL, Wariant Maksymalny", "Super PL + EU, Wariant Podstawowy", "Super PL + EU, Wariant Rozszerzony", "Super PL + EU, Wariant Rozszerzony Plus", "Super PL + EU, Wariant Maksymalny"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik", "Oryginał"] },
+    { id: "auto_non_stop", label: "Auto Non Stop", icon: Car },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] }
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
+    { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz },
+    { id: "asystent_zdrowotny", label: "PZU Auto Asystent Zdrowotny", icon: Activity },
+    { id: "opony", label: "PZU Auto Opony", icon: RefreshCcw, options: ["Mini", "Komfort", "Super", "Super+"] },
+    { id: "ochrona_prawna", label: "PZU Auto Ochrona Prawna", icon: Scale, options: ["Komfort", "Super"] }
   ],
   "Ergo Hestia": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
