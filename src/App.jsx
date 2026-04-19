@@ -297,12 +297,15 @@ const DODATKI_KONFIG = {
     { id: "opony_ass", label: "Opony Assistance", icon: RefreshCcw }
   ],
   "HDI": [
-    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW },
-    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
-    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Standard", "Złoty", "Złoty+"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik - Suma 5.000 zł"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
-    { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] }
+    { id: "ekstra_2000", label: "Ekstra 2000", icon: Zap },
+    { id: "nnw_rodzina", label: "NNW Bezpieczna Rodzina", icon: Users, options: ["100.000 zł", "150.000 zł"] },
+    { id: "opony_ass", label: "Opony Assistance", icon: RefreshCcw }
   ],
   "Link4": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "20.000 zł", "50.000 zł", "100.000 zł"] },
