@@ -22,7 +22,7 @@ import {
   RefreshCcw, 
   FileText, 
   Zap, 
-  BarChart3, 
+  BarChart, 
   Database, 
   Users, 
   Search, 
@@ -46,18 +46,18 @@ import {
   Car,
   ShieldCheck,
   Save,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
-  Building2,
-  Settings2,
-  PackagePlus,
+  Building,
+  Settings,
+  Package,
   Activity,
   Scale,
   FilePlus,
   Fingerprint,
   Star,
   Wrench,
-  ShieldAlert
+  AlertTriangle
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
@@ -286,11 +286,15 @@ const DODATKI_KONFIG = {
   ],
   "Warta": [
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
-    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW },
-    { id: "warta_pomoc", label: "Warta Pomoc", icon: CustomAppIcons.Laweta, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
-    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
-    { id: "ochrona_znizek_oc", label: "Ochrona zniżek OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
-    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] }
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "20.000 zł", "30.000 zł", "100.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Standard", "Złoty", "Złoty+", "Platynowy"] },
+    { id: "gsu", label: "GSU", icon: ShieldCheck },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik - Suma 5.000 zł", "Oryginał - Suma 9.000 zł"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
+    { id: "ekstra_2000", label: "Ekstra 2000", icon: Zap },
+    { id: "nnw_rodzina", label: "NNW Bezpieczna Rodzina", icon: Users, options: ["100.000 zł", "150.000 zł", "300.000 zł"] },
+    { id: "opony_ass", label: "Opony Assistance", icon: RefreshCcw }
   ],
   "HDI": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW },
@@ -307,7 +311,7 @@ const DODATKI_KONFIG = {
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { id: "auto_zastepcze", label: "Auto Zastępcze", icon: Car },
-    { id: "pomoc_kradziez", label: "Pomoc po kradzieży", icon: ShieldAlert },
+    { id: "pomoc_kradziez", label: "Pomoc po kradzieży", icon: AlertTriangle },
     { id: "pomoc_wypadek", label: "Pomoc po wypadku", icon: AlertCircle },
     { id: "kluczyki_plus", label: "Kluczyki Plus", icon: Wrench }
   ],
@@ -743,6 +747,7 @@ const OfertyModule = ({ user }) => {
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) addC3("Brak redukcji sumy ubezpieczenia");
               if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(naprawaTxt);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') addC3(`Assistance: ${w.dodatki['car_ass']}`);
+              if (w.dodatki['ass'] && typeof w.dodatki['ass'] === 'string') addC3(`Assistance: ${w.dodatki['ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') addC3(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') addC3(`Szyby: ${w.dodatki['szyby']}`);
               
@@ -914,6 +919,7 @@ const OfertyModule = ({ user }) => {
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) drawBulletReal("Brak redukcji sumy ubezpieczenia");
               if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(naprawaTxt);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['car_ass']}`);
+              if (w.dodatki['ass'] && typeof w.dodatki['ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') drawBulletReal(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
               if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') drawBulletReal(`Szyby: ${w.dodatki['szyby']}`);
 
@@ -1303,7 +1309,7 @@ const OfertyModule = ({ user }) => {
 
                       <div className="space-y-6">
                         <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building2 size={16} className="text-[#0067b1]"/> Towarzystwo</label>
+                          <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building size={16} className="text-[#0067b1]"/> Towarzystwo</label>
                           <select className="w-full px-5 py-5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
                             {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
                           </select>
@@ -1347,7 +1353,7 @@ const OfertyModule = ({ user }) => {
 
                     <div className="md:col-span-7 space-y-8">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-5">
-                        <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><PackagePlus size={20} /> Konfiguracja Rozszerzeń</p>
+                        <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><Package size={20} /> Konfiguracja Rozszerzeń</p>
                         <Layers size={20} className="text-[#0067b1]/30" />
                       </div>
 
@@ -1383,7 +1389,7 @@ const OfertyModule = ({ user }) => {
                                     onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Standard'}})} 
                                     className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Standard' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
                                   > 
-                                    <ShieldAlert size={14} /> Warta Standard
+                                    <AlertTriangle size={14} /> Warta Standard
                                   </button>
                                   <button 
                                     onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Komfort'}})} 
@@ -1418,7 +1424,7 @@ const OfertyModule = ({ user }) => {
                             {aktualnaKonfigDodatkow
                               .filter(dodatek => !dodatek.showIn || dodatek.showIn.includes(nowyWariant.tryb))
                               .map(dodatek => {
-                                const IconComponent = dodatek.icon || PackagePlus;
+                                const IconComponent = dodatek.icon || Package;
                                 const isActive = !!nowyWariant.dodatki[dodatek.id];
                                 const isExpanded = expandedDodatek === dodatek.id;
                                 
@@ -1437,7 +1443,7 @@ const OfertyModule = ({ user }) => {
                                     <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
                                       <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50 text-[#0067b1]'}`}><IconComponent size={24} /></div>
                                       <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
-                                      {isActive && <CheckCircle2 size={16} className="absolute top-3 right-3 text-white/80" />}
+                                      {isActive && <CheckCircle size={16} className="absolute top-3 right-3 text-white/80" />}
                                     </button>
                                     
                                     {isExpanded && !isMulti && dodatek.options && (
@@ -1475,7 +1481,7 @@ const OfertyModule = ({ user }) => {
                                                 >
                                                   <span className="leading-tight flex-1 text-[11px] font-black text-[#1e293b]">{opt}</span>
                                                   {isMultiSelected ? (
-                                                    <CheckCircle2 size={24} className="text-[#0067b1] shrink-0" />
+                                                    <CheckCircle size={24} className="text-[#0067b1] shrink-0" />
                                                   ) : (
                                                     <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-200 shrink-0"></div>
                                                   )}
@@ -1558,11 +1564,11 @@ const OfertyModule = ({ user }) => {
                           )}
                           <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
                               <span className="flex items-center gap-1.5">Odpowiedzialność OC</span> 
-                              {w.tryb !== 'AC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
+                              {w.tryb !== 'AC' ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
                           </div>
                           <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
                               <span className="flex items-center gap-1.5">Autocasco (AC)</span> 
-                              {w.tryb !== 'OC' ? <CheckCircle2 size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
+                              {w.tryb !== 'OC' ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
                           </div>
                           <div className="flex flex-wrap gap-2 mt-6">
                             {w.tryb !== 'OC' && (
@@ -1577,7 +1583,7 @@ const OfertyModule = ({ user }) => {
                             {Object.entries(w.dodatki).map(([id, val]) => {
                               if (!val || (Array.isArray(val) && val.length === 0)) return null;
                               const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
-                              const IconComponent = dKonfig && dKonfig.icon ? dKonfig.icon : PackagePlus;
+                              const IconComponent = dKonfig && dKonfig.icon ? dKonfig.icon : Package;
 
                               if (Array.isArray(val)) {
                                 return val.map(v => (
@@ -1615,7 +1621,7 @@ const OfertyModule = ({ user }) => {
 
         <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
            <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <span><Settings2 size={14} className="inline mr-2"/> EIGDA OS v8.0</span>
+            <span><Settings size={14} className="inline mr-2"/> EIGDA OS v8.0</span>
              <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
           </div>
        </footer>
@@ -1632,10 +1638,10 @@ const OfertyModule = ({ user }) => {
       )}
     </>
   );
-};
+}
 
-// --- GŁÓWNA APLIKACJA (EGIDA) ---
-export default function App() {
+// --- POZOSTAŁE ZAKŁADKI (Wypowiedzenia itp.) ZOSTAŁY ZASTĄPIONE NOWYMI MODUŁAMI Z POPRAWIONYMI IKONAMI ---
+export default function AppWrapper() {
   const [user, setUser] = useState(null);
   const [init, setInit] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -1664,7 +1670,7 @@ export default function App() {
     { id: 'wypowiedzenia', label: 'Wypowiedzenia', icon: FileText, color: 'text-rose-500', bg: 'bg-rose-50', desc: 'Generator dokumentu' },
     { id: 'oferty', label: 'Oferty', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50', desc: 'Nowe propozycje' },
     { id: 'porownania', label: 'Porównania', icon: Layers, color: 'text-indigo-500', bg: 'bg-indigo-50', desc: 'Zakresów ubezpieczenia' },
-    { id: 'statystyki', label: 'Statystyki', icon: BarChart3, color: 'text-emerald-500', bg: 'bg-emerald-50', desc: 'Analiza wyników' },
+    { id: 'statystyki', label: 'Statystyki', icon: BarChart, color: 'text-emerald-500', bg: 'bg-emerald-50', desc: 'Analiza wyników' },
     { id: 'baza', label: 'Baza Danych', icon: Database, color: 'text-cyan-500', bg: 'bg-cyan-50', desc: 'Zasoby klientów' },
   ];
 
