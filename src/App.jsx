@@ -349,6 +349,30 @@ const DODATKI_KONFIG = {
     { id: "opony", label: "Opony", icon: RefreshCcw },
     { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz }
   ],
+  "Interrisk": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: [
+        "Start",
+        "Standard - holowanie do 100 km w Polsce",
+        "Standard - holowanie do 100 km w PL i EU do 100 km",
+        "Standard - holowanie do 100 km w PL i EU do 500 km",
+        "Standard - holowanie do 250 km w Polsce",
+        "Standard - holowanie do 250 km w PL i EU do 100 km",
+        "Standard - holowanie do 250 km w PL i EU do 500 km",
+        "Standard - holowanie w PL bez limitu km",
+        "Standard - holowanie w PL bez limitu km i EU do 100 km",
+        "Standard - holowanie w PL bez limitu km i EU do 500 km",
+        "Premium - holowanie w PL bez limitu km i EU do 200 km",
+        "Premium - holowanie w PL bez limitu km i EU do 500 km",
+        "Premium - holowanie w PL bez limitu km i EU do 1500 km"
+      ] 
+    },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
+    { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz },
+    { id: "ochrona_prawna", label: "Ochrona Prawna", icon: Scale }
+  ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
