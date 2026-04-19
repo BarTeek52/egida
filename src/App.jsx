@@ -1750,6 +1750,32 @@ export default function AppWrapper() {
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  
+  const sidebarTimerRef = useRef(null);
+
+  const startSidebarTimer = () => {
+    if (sidebarTimerRef.current) clearTimeout(sidebarTimerRef.current);
+    sidebarTimerRef.current = setTimeout(() => {
+      setSidebarOpen(false);
+    }, 5000);
+  };
+
+  const handleSidebarMouseEnter = () => {
+    if (sidebarTimerRef.current) clearTimeout(sidebarTimerRef.current);
+    setSidebarOpen(true);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    startSidebarTimer();
+  };
+
+  useEffect(() => {
+    startSidebarTimer();
+    return () => {
+      if (sidebarTimerRef.current) clearTimeout(sidebarTimerRef.current);
+    };
+  }, []);
+
   const [records, setRecords] = useState([]);
   const [actionStatus, setActionStatus] = useState(null);
   const [errors, setErrors] = useState([]);
@@ -2071,10 +2097,6 @@ export default function AppWrapper() {
               <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida</p>
               <h1 className="text-4xl font-black text-slate-900" style={styles.header}>Pulpit Agenta</h1>
             </div>
-            <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Aktywny: {user?.email}</span>
-            </div>
           </header>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-[#0067b1] p-8 rounded-[2.5rem] text-white shadow-2xl shadow-blue-200 flex flex-col justify-between overflow-hidden relative group">
@@ -2253,7 +2275,11 @@ export default function AppWrapper() {
 
   return (
     <div className="flex h-screen bg-gray-50 text-slate-900" style={styles.body}>
-      <aside className={`bg-white border-r border-slate-100 transition-all duration-500 ${isSidebarOpen ? 'w-72' : 'w-24'} hidden md:flex flex-col z-30`}>
+      <aside 
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
+        className={`bg-white border-r border-slate-100 transition-all duration-500 ${isSidebarOpen ? 'w-72' : 'w-24'} hidden md:flex flex-col z-30`}
+      >
         <div className="p-8 flex items-center gap-4">
           <div className="bg-[#0067b1] p-3 rounded-2xl text-white shadow-xl shadow-blue-200"><Shield size={28} /></div>
           {isSidebarOpen && (
