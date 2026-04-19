@@ -324,6 +324,15 @@ const DODATKI_KONFIG = {
     { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz },
     { id: "powrot_do_zdrowia", label: "Powrót do zdrowia", icon: Activity }
   ],
+  "Generali": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["3.000 zł", "5.000 zł", "10.000 zł", "25.000 zł", "50.000 zł", "75.000 zł", "100.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Standard", "Komfort", "Komfort Plus", "Lux"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik - 3.000 zł", "Zamiennik 5.000 zł", "Zamiennik 6.000 zł", "Oryginał 15.000 zł"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
+    { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
+    { id: "nnw_kierowcy", label: "NNW Kierowcy (100.000 zł)", icon: UserCircle },
+    { id: "rehabilitacja", label: "Rehabilitacja po wypadku", icon: Activity }
+  ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
