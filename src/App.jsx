@@ -2325,9 +2325,19 @@ export default function AppWrapper() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto bg-[#fdfdfe] relative">
+      <main 
+        className="flex-1 overflow-y-auto bg-[#fdfdfe] relative"
+        onClick={() => {
+          if (isSidebarOpen) {
+            setSidebarOpen(false);
+          }
+        }}
+      >
         <button 
-          onClick={() => setSidebarOpen(!isSidebarOpen)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSidebarOpen(!isSidebarOpen);
+          }}
           className="absolute left-4 top-4 hidden md:flex p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#0067b1] shadow-sm z-50 transition-all"
         >
           {isSidebarOpen ? <X size={16} /> : <Menu size={16} />}
