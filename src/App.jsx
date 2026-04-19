@@ -270,8 +270,8 @@ const DODATKI_KONFIG = {
   ],
   "Ergo Biznes": [
     { id: "nnw", label: "NNW Biznes", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
-    { id: "car_ass", label: "Assistance Biznes", icon: CustomAppIcons.Laweta, options: ["Biznes (Polska)", "Biznes (Europa 200km)", "Biznes (Europa 500km)", "Biznes (Europa 1000km)"] },
-    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
+    { id: "car_ass", label: "Assistance Biznes", icon: CustomAppIcons.Laweta, options: ["Standard", "Komfort", "Maksymalny dla samochodu osobowego", "Maksymalny dla samochodu ciężarowego"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik - Suma 5.000 zł", "Oryginał - Suma 10.000 zł"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { 
@@ -282,7 +282,8 @@ const DODATKI_KONFIG = {
         return KLAUZULE_HESTIA_BAZA.OC_AC;
       }
     },
-    { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale }
+    { id: "ochrona_prawna", label: "Ochrona Prawna Biznes", icon: Scale, options: ["wariant podstawowy", "wariant rozszerzony"] },
+    { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz }
   ],
   "Warta": [
     { id: "podwyzszone_ryzyko", label: "Kierujący o podwyższonym ryzyku", icon: AlertCircle, showIn: ['OC', 'OC+AC', 'AC'] },
