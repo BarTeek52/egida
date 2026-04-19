@@ -333,6 +333,15 @@ const DODATKI_KONFIG = {
     { id: "nnw_kierowcy", label: "NNW Kierowcy (100.000 zł)", icon: UserCircle },
     { id: "rehabilitacja", label: "Rehabilitacja po wypadku", icon: Activity }
   ],
+  "Wiener": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Podstawowy", "Plus Standard – Polska", "Plus Lux – Polska", "Plus Europa – Standard", "Plus Europa – Lux"] },
+    { id: "pojazd_zastepczy", label: "Pojazd Zastępczy", icon: Car, options: ["do 3 dni", "do 7 dni", "do 14 dni", "do 21 dni"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba },
+    { id: "koszty_leczenia", label: "Koszty leczenia po NNW", icon: Activity },
+    { id: "opony", label: "Opony", icon: RefreshCcw },
+    { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz }
+  ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
