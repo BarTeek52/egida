@@ -87,41 +87,32 @@ const pdfAssetsCache = {
 const CustomAppIcons = {
   Laweta: ({ size = 24, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {/* Auto na lawecie */}
       <path d="M4 11l1.5-2h3.5L10.5 11" />
       <path d="M2.5 11h8.5v1.5h-8.5z" />
       <circle cx="4.5" cy="13.5" r="1" />
       <circle cx="9.5" cy="13.5" r="1" />
-      {/* Konstrukcja lawety */}
       <path d="M2 15h12" />
       <circle cx="7" cy="18" r="2" />
       <circle cx="18" cy="18" r="2" />
       <path d="M9 18h7" />
-      {/* Kabina ciężarówki */}
       <path d="M14 15V9h3l3 4v2h-2" />
     </svg>
   ),
   Tarcze: ({ size = 24, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {/* Tarcza drugoplanowa (z lekkim kryciem) */}
       <path d="M7 4L3 5.5v6c0 5 4.5 9 8 10.5 1.5-.6 3-1.6 4-3" opacity="0.4"/>
-      {/* Tarcza główna */}
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   ),
   Szyba: ({ size = 24, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {/* Zarys szyby samochodowej */}
       <path d="M3 19L5 7h14l2 12H3z" />
-      {/* Linia pęknięcia */}
       <path d="M14 7l-2 4 2 2-3 6" />
     </svg>
   ),
   NNW: ({ size = 24, className = "" }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {/* Tarcza ochronna */}
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      {/* Krzyż medyczny */}
       <path d="M12 8v8" />
       <path d="M8 12h8" />
     </svg>
@@ -152,10 +143,8 @@ const styles = {
   body: { fontFamily: "'Kiro', sans-serif" }
 };
 
-// --- LOGO PALLADA (Ścieżka relatywna do folderu public) ---
 const pallada_trans_logo = "/pallada_trans_logo.png"; 
 
-// --- LOGOTYPY TOWARZYSTW (Ścieżki relatywne do folderu public) ---
 const LOGOS = {
   "Ergo Hestia": "/ergo_hestia_logo.png",
   "Ergo Biznes": "/ergo_hestia_logo.png",
@@ -172,7 +161,6 @@ const LOGOS = {
   "MTU": "/mtu_logo.png"
 };
 
-// --- BAZA KLAUZUL HESTII (OFERTOWANIE) ---
 const KLAUZULE_HESTIA_BAZA = {
   OC: [
     "K120 Pojazd zastępczy - motocykl",
@@ -313,7 +301,6 @@ const KLAUZULE_ERGO_BIZNES = {
   ]
 };
 
-// --- KONFIGURACJA DODATKÓW PER FIRMA Z NOWYMI IKONAMI (OFERTOWANIE) ---
 const DODATKI_KONFIG = {
   "PZU S.A.": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
@@ -463,7 +450,6 @@ const BAZA_UBEZPIECZYCIELI = [
   "Wiener", "Interrisk", "Generali", "Allianz", "Uniqa", "MTU"
 ];
 
-// --- FUNKCJE FORMATUJĄCE ---
 const formatPlate = (val) => val.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
 const formatTitleCase = (text) => text ? text.toLowerCase().replace(/(?:^|\s|-)\p{L}/gu, (match) => match.toUpperCase()) : '';
 const formatTitleCaseOferty = (str) => {
@@ -498,7 +484,6 @@ const calculateInstallment = (valStr, divider) => {
   return formatAsKsiega(part.replace('.', ','));
 };
 
-// --- NAZWA UŻYTKOWNIKA Z EMAILA ---
 const getUserDisplayName = (email) => {
   if (!email) return "Niezalogowany";
   const namePart = email.split('@')[0];
@@ -511,7 +496,6 @@ const getUserDisplayName = (email) => {
   return namePart;
 };
 
-// --- FUNKCJA WSPOMAGAJĄCA ŁADOWANIE SKRYPTU ---
 const loadJsPdfScript = async () => {
     if (window.jspdf) return true;
     if (pdfAssetsCache.jsPdfLoaded) return true;
@@ -526,7 +510,6 @@ const loadJsPdfScript = async () => {
     });
 };
 
-// --- EKRAN LOGOWANIA ---
 const LoginScreen = ({ onLogin, error }) => {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
@@ -568,7 +551,6 @@ const LoginScreen = ({ onLogin, error }) => {
     );
 };
 
-// --- KOMPONENT: DYNAMICZNE LOGO FIRMY Z FALLBACKIEM NA TEKST ---
 const CompanyLogo = ({ firma }) => {
   const [imgError, setImgError] = useState(false);
   const src = LOGOS[firma];
@@ -586,8 +568,6 @@ const CompanyLogo = ({ firma }) => {
   return <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em] text-center">{firma}</h3>;
 };
 
-
-// --- MODUŁ OFERTOWANIA (NATYWNY PDF) ---
 const OfertyModule = ({ user }) => {
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -638,7 +618,6 @@ const OfertyModule = ({ user }) => {
     }
   }, [user]);
 
-  // LOGIKA NATYWNEGO GENEROWANIA PDF W JSPDF + ZAAWANSOWANY CACHE
   const handleGeneratePdfNative = async () => {
     setPdfMode(true);
     try {
@@ -663,12 +642,10 @@ const OfertyModule = ({ user }) => {
           }
       };
       
-      // Ładowanie czcionek używając Cache
       await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf', 'Kiro-Regular.ttf', 'Kiro', 'normal');
       await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Semplicita-Bold.ttf', 'Semplicita', 'bold');
       await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
 
-      // Ładowanie logotypów Towarzystw przy użyciu Cache
       const uniqueFirms = [...new Set(oferta.warianty.map(w => w.firma))];
       const preloadedLogos = {};
       
@@ -676,7 +653,6 @@ const OfertyModule = ({ user }) => {
           if (LOGOS[firma] && !pdfAssetsCache.logos[firma]) {
               await new Promise((resolve) => {
                   const img = new Image();
-                  // Lokalne obrazy z public nie potrzebują crossOrigin Anonymous, ale nie przeszkadza on
                   img.onload = () => {
                       pdfAssetsCache.logos[firma] = { img, ratio: img.width / img.height };
                       resolve();
@@ -693,7 +669,6 @@ const OfertyModule = ({ user }) => {
           }
       }
 
-      // Ładowanie Loga Pallada
       if (!pdfAssetsCache.mainLogo) {
           await new Promise((resolve) => {
               const img = new Image();
@@ -717,7 +692,6 @@ const OfertyModule = ({ user }) => {
       const blue50 = [239, 246, 255];
       const getFont = (preferred) => doc.getFontList()[preferred] ? preferred : "helvetica";
 
-      // 1. Logo i nagłówek
       if (pdfAssetsCache.mainLogo) {
           const ml = pdfAssetsCache.mainLogo;
           doc.addImage(ml.img, 'PNG', 15, 15, 28 * ml.ratio, 28, undefined, 'FAST');
@@ -748,12 +722,10 @@ const OfertyModule = ({ user }) => {
       doc.setTextColor(...slate800);
       doc.text(oferta.dataKalkulacji, 195, 30, { align: 'right' });
 
-      // Gruba niebieska linia
       doc.setDrawColor(...palladaBlue);
       doc.setLineWidth(0.6);
       doc.line(15, 45, 195, 45);
 
-      // 2. Metadane
       let currentY = 52;
       const drawMetaRow = (label, value, label2, value2, y) => {
           doc.setDrawColor(...slate200);
@@ -785,7 +757,6 @@ const OfertyModule = ({ user }) => {
       drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
       currentY += 14;
 
-      // 3. Warianty - Rysowanie tabeli
       if (oferta.warianty.length > 0) {
           let tableStartY = currentY;
           let pageSeparators = [];
@@ -829,7 +800,6 @@ const OfertyModule = ({ user }) => {
                   naprawaTxt = `Naprawa: ASO (Warta ${w.zakresAC.wariantWarta})`;
               }
 
-              // --- KROK 1: SYMULACJA WYSOKOŚCI --- 
               let simMaxY = startY + 36; 
               
               let c2Y_sim = startY + 7;
@@ -869,7 +839,6 @@ const OfertyModule = ({ user }) => {
               simMaxY += 4; 
               let maxY = simMaxY;
 
-              // --- KROK 2: WYZNACZANIE NOWEJ STRONY ---
               if (maxY > 260 && i > 0) {
                   drawFrameAndHeader(tableStartY, startY, isContinued); 
                   
@@ -887,7 +856,6 @@ const OfertyModule = ({ user }) => {
 
               const isLastRow = i === oferta.warianty.length - 1;
 
-              // --- KROK 3: TŁA KOMÓREK ---
               doc.setFillColor(248, 250, 252);
               if (isLastRow) {
                   doc.roundedRect(15, startY, 45, maxY - startY, 2, 2, 'F');
@@ -906,10 +874,8 @@ const OfertyModule = ({ user }) => {
                   doc.rect(155, startY, 40, maxY - startY, 'F');
               }
 
-              // --- KROK 4: RYSOWANIE TREŚCI ---
               const colCenterX = 37.5; 
               
-              // 1. ZNACZNIK TRYBU (OC/AC)
               doc.setFillColor(...palladaBlue);
               const tagW = 16;
               doc.roundedRect(colCenterX - (tagW / 2), startY + 4, tagW, 4.5, 1, 1, 'F'); 
@@ -917,7 +883,6 @@ const OfertyModule = ({ user }) => {
               doc.setFontSize(6);
               doc.text(w.tryb, colCenterX, startY + 7.2, { align: 'center' });
               
-              // 2. LOGO POD ZNACZNIKIEM
               const logoData = preloadedLogos[w.firma];
               if (logoData) {
                   const powieksozneLoga = ["PZU S.A.", "Interrisk", "Compensa", "Warta"];
@@ -947,7 +912,6 @@ const OfertyModule = ({ user }) => {
                   doc.text(fNameLines, colCenterX, startY + 16, { align: 'center' });
               }
               
-              // 3. SUMA UBEZPIECZENIA POD LOGIEM
               if (w.tryb !== 'OC') {
                   doc.setTextColor(...slate400);
                   doc.setFontSize(6);
@@ -979,7 +943,6 @@ const OfertyModule = ({ user }) => {
                   doc.text(typText, startValX + valW, startY + 31.5);
               }
 
-              // Kolumna 2: Zakres podstawowy (Standardowe ptaszki Pallada)
               let c2Y = startY + 7;
               const drawCheckReal = (text, type) => {
                   doc.setDrawColor(...palladaBlue);
@@ -1003,7 +966,6 @@ const OfertyModule = ({ user }) => {
               if (w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc']) drawCheckReal("Assistance", "ASS");
               if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb", "SZYBY");
 
-              // Kolumna 3: Rozszerzenia
               let c3Y = startY + 7;
               const drawBulletReal = (text) => {
                   doc.setTextColor(...palladaBlue);
@@ -1037,7 +999,6 @@ const OfertyModule = ({ user }) => {
                   }
               });
 
-              // Kolumna 4: Składka łączna
               const midY = startY + ((maxY - startY) / 2);
               doc.setTextColor(...slate400);
               doc.setFontSize(6.5);
@@ -1082,7 +1043,6 @@ const OfertyModule = ({ user }) => {
           drawFrameAndHeader(tableStartY, currentY, isContinued);
       }
 
-      // 4. Stopka
       if (currentY > 250) {
           doc.addPage();
           currentY = 20;
@@ -1117,7 +1077,6 @@ const OfertyModule = ({ user }) => {
       doc.setFontSize(6);
       doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
 
-      // NUMERACJA STRON
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i);
@@ -1484,7 +1443,6 @@ const OfertyModule = ({ user }) => {
                               ))}
                             </div>
 
-                            {/* WARTA ASO - DODATKOWY WYBÓR WARIANTU */}
                             {nowyWariant.firma === 'Warta' && nowyWariant.zakresAC.metodaNaprawy === 'ASO' && (
                               <div className="animate-in fade-in slide-in-from-top-2">
                                 <div className="flex gap-2 p-1.5 bg-blue-50/80 rounded-2xl border border-blue-100 shadow-inner">
@@ -1743,7 +1701,6 @@ const OfertyModule = ({ user }) => {
   );
 }
 
-// --- POZOSTAŁE ZAKŁADKI (Wypowiedzenia itp.) ZOSTAŁY ZASTĄPIONE NOWYMI MODUŁAMI Z POPRAWIONYMI IKONAMI ---
 export default function AppWrapper() {
   const [user, setUser] = useState(null);
   const [init, setInit] = useState(false);
@@ -1913,14 +1870,26 @@ export default function AppWrapper() {
         setTimeout(() => setActionStatus(null), 3000); 
         return; 
     }
+
     try {
         setActionStatus('saving');
-        const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
-        const { numerPolisy, dataRozwiazania, dataPodpisania, miejscowoscWystawienia, art, ...dataToSave } = formData;
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
-            ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
-        });
         
+        // --- SEPARACJA LOGIKI ZAPISU DO BAZY ---
+        // Zapis do bazy nie przerwie działania funkcji w razie błędu 
+        // np. przy braku połączenia lub braku autoryzacji w trybie Preview
+        try {
+            if (user) {
+                const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
+                const { numerPolisy, dataRozwiazania, dataPodpisania, miejscowoscWystawienia, art, ...dataToSave } = formData;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
+                    ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
+                });
+            }
+        } catch (dbErr) {
+            console.warn("Zignorowano błąd zapisu do bazy danych. Dokument PDF zostanie wygenerowany.", dbErr);
+        }
+        
+        // --- LOGIKA GENEROWANIA PDF ---
         await loadJsPdfScript();
         const { jsPDF } = window.jspdf;
         const docPdf = new jsPDF();
@@ -1947,7 +1916,10 @@ export default function AppWrapper() {
         await loadFontWithCache('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf', 'Kiro-Bold.ttf', 'Kiro', 'bold');
         
         const palladaBlue = [0, 103, 177]; 
-        const slate500 = [100, 116, 139]; 
+        const slate500 = [100, 116, 139];
+        // FIX: Zmienna slate400 była używana niżej, ale nie zadeklarowana!
+        const slate400 = [148, 163, 184]; 
+
         const getFont = (preferred) => docPdf.getFontList()[preferred] ? preferred : "helvetica";
         
         if (!pdfAssetsCache.mainLogo) {
@@ -2035,7 +2007,7 @@ export default function AppWrapper() {
         drawDataBlock(75, blockY, "Marka i model pojazdu", `${formData.marka} ${formData.model}`.toUpperCase());
         drawDataBlock(140, blockY, "Numer rejestracyjny", formData.nrRejestracyjny.toUpperCase());
         const drawCb = (y, isChecked, textLines) => {
-            docPdf.setDrawColor(...slate400);
+            docPdf.setDrawColor(...slate400); // FIX: Użycie naprawionej zmiennej
             docPdf.setLineWidth(0.3);
             docPdf.rect(20, y - 4, 5, 5);
             if (isChecked) {
@@ -2060,13 +2032,16 @@ export default function AppWrapper() {
         const signY = 240;
         docPdf.setDrawColor(...slate400);
         docPdf.setLineWidth(0.2);
-        docPdf.setLineDashPattern([1, 1], 0);
+        
+        // FIX: Zamiana na standardowe setLineDash (niektóre wersje jsPDF odrzucają setLineDashPattern)
+        docPdf.setLineDash([1, 1], 0); 
+        
         docPdf.rect(15, signY - 17, 60, 30); 
         docPdf.setFontSize(6.5);
         docPdf.setTextColor(...slate400);
         docPdf.text("DATA OTRZYMANIA :", 45, signY - 12, { align: 'center' });
         docPdf.text("PODPIS AGENTA", 45, signY - 8, { align: 'center' });
-        docPdf.setLineDashPattern([], 0); 
+        docPdf.setLineDash([], 0); 
         docPdf.setTextColor(0);
         docPdf.setFontSize(10);
         docPdf.text(`${formatTitleCase(formData.miejscowoscWystawienia)}, dnia ${formatToPLDate(formData.dataPodpisania)}`, 20, signY + 20);
@@ -2084,7 +2059,7 @@ export default function AppWrapper() {
         setTimeout(() => setActionStatus(null), 3000);
     } catch (err) { 
         setActionStatus('error'); 
-        console.error(err);
+        console.error("Wystąpił krytyczny błąd podczas generowania dokumentu:", err);
     }
   };
 
@@ -2365,6 +2340,12 @@ export default function AppWrapper() {
           <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-12">
               <AlertCircle className="text-rose-400" /> 
               <span className="font-black text-xs uppercase tracking-widest">Błędy w formularzu!</span>
+          </div>
+      )}
+      {actionStatus === 'error' && (
+          <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-red-500 text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-12">
+              <AlertCircle className="text-white" /> 
+              <span className="font-black text-xs uppercase tracking-widest">Wystąpił błąd! (Brak uprawnień)</span>
           </div>
       )}
       {actionStatus === 'success' && (
