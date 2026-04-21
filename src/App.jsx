@@ -225,6 +225,82 @@ const KLAUZULE_HESTIA_BAZA = {
   ]
 };
 
+const KLAUZULE_ERGO_BIZNES = {
+  OC: [
+    "Transport towarów i ładunków niebezpiecznych",
+    "Usługi kurierskie",
+    "Transport osób krajowy, taxi, Uber",
+    "Transport osób międzynarodowy",
+    "Transport osób międzynarodowy, krajowy, taxi, Uber itp.",
+    "Pojazd nie jest wykorzystywany do zarobkowego transportu osób",
+    "Klauzula wypożyczenia pojazdu",
+    "Wynajem długoterminowy",
+    "Pojazd zastępczy",
+    "Rajdy, wyścigi, treningi, konkursy",
+    "Jazdy próbne, rekwizyty",
+    "Nauka jazdy",
+    "Płyta lotniska",
+    "Wóz interwencyjny",
+    "Pojazdy uprzywilejowane",
+    "Odmienne od zapisów OWU-karencja 7 dni",
+    "Nielimitowane holowanie dla pojazdu osobowego",
+    "Rozszerzenie limitów pojazdu zastępczego dla samochodu osobowego",
+    "Szyby oryginalne",
+    "Zniesienie udziału własnego w szkodzie w szybie czołowej lub przedniej szybie panoramicznej",
+    "NNW 200% z tytułu zgonu"
+  ],
+  AC_OCAC: [
+    "Transport towarów i ładunków niebezpiecznych",
+    "Usługi kurierskie",
+    "Transport osób krajowy, taxi, Uber",
+    "Transport osób międzynarodowy",
+    "Transport osób międzynarodowy, krajowy, taxi, Uber",
+    "Pojazd nie jest wykorzystywany do zarobkowego transportu osób",
+    "Klauzula wypożyczenia pojazdu",
+    "Wynajem długoterminowy",
+    "Pojazd zastępczy",
+    "Rajdy, wyścigi, treningi, konkursy",
+    "Jazdy próbne, rekwizyty",
+    "Nauka jazdy",
+    "Płyta lotniska",
+    "Wóz interwencyjny",
+    "Pojazdy uprzywilejowane",
+    "AC Wartość fakturowa",
+    "AC Klauzula wartości rynkowej",
+    "Gwarancja 12- stała suma",
+    "Klauzula Minicasco",
+    "AC Ograniczenie zakresu terytorialnego RP",
+    "AC Wprowadzenie udziału własnego w wysokości 500 zł",
+    "AC Wprowadzenie udziału własnego w wysokości 1 000 zł",
+    "AC Usługi kurierskie",
+    "AC Transport osób krajowy, krajowy, taxi, Uber",
+    "AC Transport osób międzynarodowy",
+    "AC Transport osób międzynarodowy, krajowy, taxi, Uber",
+    "AC Pojazd nie jest wykorzystywany do zarobkowego transportu osób",
+    "AC Transport towarów i ładunków niebezpiecznych",
+    "AC klauzula wypożyczenia pojazdów",
+    "AC wynajem długoterminowy",
+    "AC pojazd zastępczy",
+    "AC Rajdy, wyścigi, treningi, konkursy",
+    "AC Jazdy próbne, rekwizyty",
+    "AC Pojazd wykonany poza wytwórnią fabryczną tzw. składak",
+    "AC Płyta lotniska",
+    "AC Wóz interwencyjny",
+    "AC Pojazdy uprzywilejowane",
+    "AC Klauzula powłoki, folii SU 3 000 zł",
+    "AC Klauzula przesunięcia ładunku",
+    "AC Klauzula przewrócenia",
+    "AC Nauka jazdy",
+    "Odmienne od zapisów OWU-karencja 7 dni",
+    "Nielimitowane holowanie dla pojazdu osobowego",
+    "Rozszerzenie limitów pojazdu zastępczego dla samochodu osobowego",
+    "Szyby oryginalne",
+    "Zniesienie udziału własnego w szkodzie w szybie czołowej lub przedniej szybie panoramicznej",
+    "NNW 200% z tytułu zgonu",
+    "AC Klauzula stawki rbh w wariancie kosztorysowym"
+  ]
+};
+
 const DODATKI_KONFIG = {
   "PZU S.A.": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
@@ -366,6 +442,21 @@ const DODATKI_KONFIG = {
     { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["5.000 zł"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] }
   ],
+  "Uniqa": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Midi", "Standard", "Premium", "Prestiż"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["PL – Zamiennik (SU 4.000 zł)", "PL-Zamiennik (SU 6.000 zł)", "PL+EU – Zamiennik (SU: 4.000 zł)", "PL+EU – Zamiennik (SU: 6.000 zł)", "PL+EU – Oryginał (SU: 10.000 zł)"] },
+    { id: "bagaz_foteliki", label: "Ubezpieczenie bagażu i fotelików", icon: CustomAppIcons.Bagaz },
+    { id: "droga_zdrowia", label: "Droga do zdrowia", icon: Activity },
+    { id: "pomoc_medyczna", label: "Pomoc Medyczna 24", icon: Activity },
+    { id: "auto_zastepcze", label: "Samochód zastępczy na 5 dni po wypadku", icon: Car },
+    { id: "opony", label: "Opony assistance", icon: RefreshCcw }
+  ],
+  "Allianz": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["10.000 zł", "50.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Podstawowy", "Rozszerzony", "Optymalny", "Maksymalny"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["suma: 5.000 zł"] }
+  ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
     { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta },
@@ -376,8 +467,19 @@ const DODATKI_KONFIG = {
 };
 
 const BAZA_UBEZPIECZYCIELI = [
-  "Ergo Hestia", "Ergo Biznes", "PZU S.A.", "Warta", "Link4", "HDI", "Compensa", 
-  "Wiener", "Interrisk", "Generali", "Allianz", "Uniqa", "MTU"
+  "Ergo Hestia", 
+  "Ergo Biznes", 
+  "PZU S.A.", 
+  "Warta", 
+  "HDI", 
+  "Compensa", 
+  "Generali", 
+  "Link4", 
+  "Allianz", 
+  "Wiener", 
+  "Interrisk", 
+  "Uniqa", 
+  "MTU"
 ];
 
 const formatPlate = (val) => val.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
