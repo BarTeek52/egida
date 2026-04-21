@@ -225,82 +225,6 @@ const KLAUZULE_HESTIA_BAZA = {
   ]
 };
 
-const KLAUZULE_ERGO_BIZNES = {
-  OC: [
-    "Transport towarów i ładunków niebezpiecznych",
-    "Usługi kurierskie",
-    "Transport osób krajowy, taxi, Uber",
-    "Transport osób międzynarodowy",
-    "Transport osób międzynarodowy, krajowy, taxi, Uber itp.",
-    "Pojazd nie jest wykorzystywany do zarobkowego transportu osób",
-    "Klauzula wypożyczenia pojazdu",
-    "Wynajem długoterminowy",
-    "Pojazd zastępczy",
-    "Rajdy, wyścigi, treningi, konkursy",
-    "Jazdy próbne, rekwizyty",
-    "Nauka jazdy",
-    "Płyta lotniska",
-    "Wóz interwencyjny",
-    "Pojazdy uprzywilejowane",
-    "Odmienne od zapisów OWU-karencja 7 dni",
-    "Nielimitowane holowanie dla pojazdu osobowego",
-    "Rozszerzenie limitów pojazdu zastępczego dla samochodu osobowego",
-    "Szyby oryginalne",
-    "Zniesienie udziału własnego w szkodzie w szybie czołowej lub przedniej szybie panoramicznej",
-    "NNW 200% z tytułu zgonu"
-  ],
-  AC_OCAC: [
-    "Transport towarów i ładunków niebezpiecznych",
-    "Usługi kurierskie",
-    "Transport osób krajowy, taxi, Uber",
-    "Transport osób międzynarodowy",
-    "Transport osób międzynarodowy, krajowy, taxi, Uber",
-    "Pojazd nie jest wykorzystywany do zarobkowego transportu osób",
-    "Klauzula wypożyczenia pojazdu",
-    "Wynajem długoterminowy",
-    "Pojazd zastępczy",
-    "Rajdy, wyścigi, treningi, konkursy",
-    "Jazdy próbne, rekwizyty",
-    "Nauka jazdy",
-    "Płyta lotniska",
-    "Wóz interwencyjny",
-    "Pojazdy uprzywilejowane",
-    "AC Wartość fakturowa",
-    "AC Klauzula wartości rynkowej",
-    "Gwarancja 12- stała suma",
-    "Klauzula Minicasco",
-    "AC Ograniczenie zakresu terytorialnego RP",
-    "AC Wprowadzenie udziału własnego w wysokości 500 zł",
-    "AC Wprowadzenie udziału własnego w wysokości 1 000 zł",
-    "AC Usługi kurierskie",
-    "AC Transport osób krajowy, krajowy, taxi, Uber",
-    "AC Transport osób międzynarodowy",
-    "AC Transport osób międzynarodowy, krajowy, taxi, Uber",
-    "AC Pojazd nie jest wykorzystywany do zarobkowego transportu osób",
-    "AC Transport towarów i ładunków niebezpiecznych",
-    "AC klauzula wypożyczenia pojazdów",
-    "AC wynajem długoterminowy",
-    "AC pojazd zastępczy",
-    "AC Rajdy, wyścigi, treningi, konkursy",
-    "AC Jazdy próbne, rekwizyty",
-    "AC Pojazd wykonany poza wytwórnią fabryczną tzw. składak",
-    "AC Płyta lotniska",
-    "AC Wóz interwencyjny",
-    "AC Pojazdy uprzywilejowane",
-    "AC Klauzula powłoki, folii SU 3 000 zł",
-    "AC Klauzula przesunięcia ładunku",
-    "AC Klauzula przewrócenia",
-    "AC Nauka jazdy",
-    "Odmienne od zapisów OWU-karencja 7 dni",
-    "Nielimitowane holowanie dla pojazdu osobowego",
-    "Rozszerzenie limitów pojazdu zastępczego dla samochodu osobowego",
-    "Szyby oryginalne",
-    "Zniesienie udziału własnego w szkodzie w szybie czołowej lub przedniej szybie panoramicznej",
-    "NNW 200% z tytułu zgonu",
-    "AC Klauzula stawki rbh w wariancie kosztorysowym"
-  ]
-};
-
 const DODATKI_KONFIG = {
   "PZU S.A.": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
@@ -316,7 +240,7 @@ const DODATKI_KONFIG = {
   ],
   "Ergo Hestia": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł", "30.000 zł", "60.000 zł"] },
-    { id: "car_ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Wypadek", "Wypadek i Awaria", "Turbo"] },
+    { id: "car_ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["Wypadek", "Wypadek i Awaria", "Wypadek i Awaria -Turbo"] },
     { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["Zamiennik (Suma 5.000 zł)", "Oryginał (Suma 5.000 zł)"] },
     { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] },
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
@@ -435,6 +359,12 @@ const DODATKI_KONFIG = {
     { id: "ochrona_znizek_ac", label: "Ochrona zniżki AC", icon: CustomAppIcons.Tarcze, showIn: ['AC', 'OC+AC'] },
     { id: "bagaz", label: "Bagaż", icon: CustomAppIcons.Bagaz },
     { id: "ochrona_prawna", label: "Ochrona Prawna", icon: Scale }
+  ],
+  "MTU": [
+    { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["10.000 zł"] },
+    { id: "ass", label: "Assistance", icon: CustomAppIcons.Laweta, options: ["holowanie do 150 km"] },
+    { id: "szyby", label: "Szyby", icon: CustomAppIcons.Szyba, options: ["5.000 zł"] },
+    { id: "ochrona_znizek_oc", label: "Ochrona zniżki OC", icon: CustomAppIcons.Tarcze, showIn: ['OC', 'OC+AC'] }
   ],
   "Default": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "10.000 zł", "15.000 zł"] },
