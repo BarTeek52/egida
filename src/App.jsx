@@ -75,11 +75,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'pallada-eigda';
 
-// IDENTYFIKATOR ZESPOŁU - w pełnej wersji byłby pobierany z profilu użytkownika
-// Dzięki niemu każdy zespół ma niezależną bazę ofert i wznowień
+// IDENTYFIKATOR ZESPOŁU
 const CURRENT_TEAM_ID = 'ZESPOL_BARTEK';
 
-// --- SYSTEM CACHE DLA PDF (PRZYSPIESZENIE GENEROWANIA) ---
+// --- SYSTEM CACHE DLA PDF ---
 const pdfAssetsCache = {
   jsPdfLoaded: false,
   fonts: {},
@@ -649,8 +648,8 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
   
-  // Stan odpowiadający za wybór podpisu na wygenerowanym PDFie
-  const [wystawJako, setWystawJako] = useState('manager');
+  // Zmiana na 'self' aby domyślnie zaciągało poprawne dane zalogowanego użytkownika
+  const [wystawJako, setWystawJako] = useState('self');
   
   const konfiguratorRef = useRef(null);
 
@@ -685,13 +684,11 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   useEffect(() => {
     if (!user) return;
     try {
-        // Zmiana na baze zespołową 'oferty_zespoly' - dzięki temu wszyscy w teamie (np. Ewelina, Beata, Bartek) widzą swoje oferty
         const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'oferty_zespoly');
         const unsubscribe = onSnapshot(historyRef, (snapshot) => {
           const data = [];
           snapshot.forEach(doc => {
               const docData = doc.data();
-              // Filtrujemy tylko dla obecnego zespołu (separacja baz między różnymi zespołami)
               if (docData.teamId === CURRENT_TEAM_ID || !docData.teamId) {
                   data.push({ id: doc.id, ...docData });
               }
@@ -744,7 +741,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                       resolve();
                   };
                   img.onerror = () => {
-                    console.warn(`Błąd ładowania logo: ${firma} ze ścieżki ${LOGOS[firma]}`);
                     resolve();
                   }; 
                   img.src = LOGOS[firma];
@@ -763,7 +759,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   resolve();
               };
               img.onerror = () => {
-                console.warn(`Błąd ładowania głównego logo ze ścieżki ${pallada_trans_logo}`);
                 resolve();
               };
               img.src = pallada_trans_logo;
@@ -1149,45 +1144,66 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       doc.text("Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji", 15, currentY + 4);
       doc.text("historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.", 15, currentY + 7);
 
-      doc.setTextColor(...slate400);
-      doc.setFontSize(5);
-      doc.setFont(getFont("Kiro"), "bold");
-      doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
-      
-      // LOGIKA PODPISU - WYBÓR STOPKI (MANAGER vs UŻYTKOWNIK)
-      doc.setTextColor(...palladaBlue);
-      doc.setFontSize(10);
-      
+      // LOGIKA PODPISU - WYBÓR STOPKI Z NOWYM FORMATOWANIEM I IKONAMI
       let pdfAuthorName = "";
-      let pdfAuthorRole = "";
       let pdfAuthorPhone = "";
       let pdfAuthorEmail = "";
       
       if (wystawJako === 'manager') {
           pdfAuthorName = "BARTEK ŻOCHOWSKI";
-          pdfAuthorRole = "MENEDŻER SPRZEDAŻY";
-          pdfAuthorPhone = "";
-          pdfAuthorEmail = "B.ZOCHOWSKI@PALLADA.COM.PL";
+          pdfAuthorPhone = ""; 
+          pdfAuthorEmail = "b.zochowski@pallada.com.pl";
       } else {
           pdfAuthorName = userProfile?.name ? userProfile.name.toUpperCase() : (user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA");
-          pdfAuthorRole = "DORADCA KLIENTA";
           pdfAuthorPhone = userProfile?.phone || "";
           pdfAuthorEmail = userProfile?.email || "";
       }
       
-      doc.text(pdfAuthorName, 195, currentY + 4, { align: 'right' });
-      
-      doc.setTextColor(71, 85, 105);
-      doc.setFontSize(6);
-      doc.text(pdfAuthorRole, 195, currentY + 7, { align: 'right' });
+      doc.setTextColor(...slate400);
+      doc.setFontSize(5);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
 
-      let contactY = currentY + 11;
+      doc.setTextColor(...palladaBlue);
+      doc.setFontSize(10);
+      doc.text(pdfAuthorName, 195, currentY + 4, { align: 'right' });
+
+      let contactY = currentY + 8;
+      
       if (pdfAuthorPhone) {
+          doc.setFontSize(8);
+          doc.setTextColor(71, 85, 105);
           doc.text(pdfAuthorPhone, 195, contactY, { align: 'right' });
-          contactY += 3;
+          
+          // Rysowanie ikonki telefonu
+          const pW = doc.getTextWidth(pdfAuthorPhone);
+          const iconX = 195 - pW - 3;
+          const iconY = contactY - 2.2;
+          
+          doc.setDrawColor(...palladaBlue);
+          doc.setLineWidth(0.2);
+          doc.roundedRect(iconX, iconY, 1.8, 2.8, 0.3, 0.3, 'S'); // obudowa
+          doc.line(iconX + 0.5, iconY + 2.2, iconX + 1.3, iconY + 2.2); // przycisk/ekranik
+          
+          contactY += 4;
       }
+
       if (pdfAuthorEmail) {
-          doc.text(pdfAuthorEmail.toUpperCase(), 195, contactY, { align: 'right' });
+          const mailLower = pdfAuthorEmail.toLowerCase();
+          doc.setFontSize(8);
+          doc.setTextColor(71, 85, 105);
+          doc.text(mailLower, 195, contactY, { align: 'right' });
+          
+          // Rysowanie ikonki e-mail (koperta)
+          const eW = doc.getTextWidth(mailLower);
+          const iconX = 195 - eW - 4;
+          const iconY = contactY - 2;
+          
+          doc.setDrawColor(...palladaBlue);
+          doc.setLineWidth(0.2);
+          doc.rect(iconX, iconY, 2.5, 1.8, 'S'); // obrys koperty
+          doc.line(iconX, iconY, iconX + 1.25, iconY + 0.9); // lewe skrzydło listu
+          doc.line(iconX + 2.5, iconY, iconX + 1.25, iconY + 0.9); // prawe skrzydło listu
       }
 
       const totalPages = doc.internal.getNumberOfPages();
@@ -1293,7 +1309,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
     if (!user || oferta.warianty.length === 0) return;
     setSaving(true);
     try {
-      // Zapisujemy ofertę ze stempelkiem zespołu - wspólna pula dla danego teamu
       const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'oferty_zespoly');
       await addDoc(historyRef, { 
           ...oferta, 
@@ -1713,8 +1728,8 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                           value={wystawJako}
                           onChange={(e) => setWystawJako(e.target.value)}
                         >
-                          <option value="manager">Menedżer (Bartek)</option>
                           <option value="self">Własne (Moje dane)</option>
+                          <option value="manager">Menedżer (Bartek)</option>
                         </select>
                     </div>
 
@@ -1960,7 +1975,6 @@ export default function AppWrapper() {
       const data = [];
       snap.forEach(d => {
         const docData = d.data();
-        // Pobieramy rekordy TYLKO dla obecnie przypisanego zespołu, aby odizolować bazy!
         if (docData.teamId === CURRENT_TEAM_ID || !docData.teamId) {
           data.push({ id: d.id, ...docData });
         }
@@ -2031,7 +2045,6 @@ export default function AppWrapper() {
     try {
         setActionStatus('saving');
         
-        // Zapis do bazy ze znacznikiem zespołu aby nie wchodziło w parade innym teamom
         try {
             if (user) {
                 const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
