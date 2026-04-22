@@ -75,6 +75,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'pallada-eigda';
 
+// IDENTYFIKATOR ZESPOŁU - w pełnej wersji byłby pobierany z profilu użytkownika
+// Dzięki niemu każdy zespół ma niezależną bazę ofert i wznowień
+const CURRENT_TEAM_ID = 'ZESPOL_BARTEK';
+
 // --- SYSTEM CACHE DLA PDF (PRZYSPIESZENIE GENEROWANIA) ---
 const pdfAssetsCache = {
   jsPdfLoaded: false,
@@ -128,14 +132,11 @@ const CustomAppIcons = {
 
 // --- STAŁE I STYLE (EGIDA) ---
 const TOWARZYSTWA = [
-    "PZU S.A.", "STU ERGO HESTIA S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
-    "Compensa TU S.A", "Aviva S.A.", "ALLIANZ Polska S.A. TUiR", "BENEFIA TU S.A.",
-    "InterRisk TU S.A.", "LINK4 TU S.A.", "Proama (Generali TU S.A.)", "TUW TUW",
+    "STU ERGO HESTIA S.A.", "PZU S.A.", "GENERALI TU S.A.", "TUiR WARTA S.A.",
+    "Compensa TU S.A", "ALLIANZ Polska S.A. TUiR", "BENEFIA TU S.A.",
+    "InterRisk TU S.A.", "LINK4 TU S.A.", "TUW TUW",
     "TUZ TUW", "UNIQA TU S.A.", "MTU ( STU ERGO HESTIA S.A.)",
-    "Pocztowe Towarzystwo Ubezpieczeń Wzajemnych", "Balcia Insurance SE",
-    "Wiener TU S.A.", "Accredited Insurance", "INSURANCE COMPANY EUROINS AD",
-    "ZAVAROVALNICA TRIGLAV D.D. (Trasti)", "WEFOX INSURANCE AG ODDZIAŁ W POLSCE",
-    "PKO Towarzystwo Ubezpieczeń S.A."
+    "Wiener TU S.A."
 ];
 
 const styles = {
@@ -150,7 +151,7 @@ const LOGOS = {
   "Ergo Biznes": "/ergo_hestia_logo.png",
   "PZU S.A.": "/pzu_logo.png",
   "Warta": "/warta_logo.png",
-  "Link4": "/link4_logo.png",
+  "LINK4": "/link4_logo.png",
   "HDI": "/hdi_logo.png",
   "Compensa": "/compensa_logo.png",
   "Wiener": "/wiener_logo.png",
@@ -370,7 +371,7 @@ const DODATKI_KONFIG = {
     { id: "nnw_rodzina", label: "NNW Bezpieczna Rodzina", icon: Users, options: ["100.000 zł", "150.000 zł"] },
     { id: "opony_ass", label: "Opony Assistance", icon: RefreshCcw }
   ],
-  "Link4": [
+  "LINK4": [
     { id: "nnw", label: "NNW", icon: CustomAppIcons.NNW, options: ["5.000 zł", "20.000 zł", "50.000 zł", "100.000 zł"] },
     { id: "ass", label: "Auto Assistance", icon: CustomAppIcons.Laweta, options: ["Mini po wypadku", "Standard", "Plus", "Komfort"] },
     { id: "szyby", label: "Szyby 24", icon: CustomAppIcons.Szyba, options: ["Zamiennik - Suma 5.000 zł", "Oryginał - Suma 5.000 zł"] },
@@ -474,7 +475,7 @@ const BAZA_UBEZPIECZYCIELI = [
   "HDI", 
   "Compensa", 
   "Generali", 
-  "Link4", 
+  "LINK4", 
   "Allianz", 
   "Wiener", 
   "Interrisk", 
@@ -542,6 +543,48 @@ const loadJsPdfScript = async () => {
     });
 };
 
+const TopRightProfile = ({ user, userProfile, onLogout, onOpenSettings }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const displayName = userProfile?.name || getUserDisplayName(user?.email);
+  const initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+  return (
+    <div className="relative" ref={menuRef}>
+       <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-3 outline-none hover:opacity-80 transition-opacity">
+          <div className="hidden sm:block text-right">
+            <p className="text-[10px] font-black text-[#0067b1] uppercase tracking-widest tracking-tight">{displayName}</p>
+            <p className="text-[9px] text-slate-500 uppercase font-bold">Twój Profil</p>
+          </div>
+          <div className="w-10 h-10 bg-[#0067b1] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-inner uppercase border-4 border-white">
+            {initials}
+          </div>
+       </button>
+       {menuOpen && (
+           <div className="absolute right-0 top-12 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+               <button onClick={() => {setMenuOpen(false); onOpenSettings();}} className="w-full text-left px-5 py-4 text-xs font-black text-slate-700 hover:bg-slate-50 border-b border-slate-50 flex items-center gap-3 transition-colors uppercase tracking-widest">
+                  <Settings size={16} className="text-[#0067b1]"/> Dane użytkownika
+               </button>
+               <button onClick={() => {setMenuOpen(false); onLogout();}} className="w-full text-left px-5 py-4 text-xs font-black text-rose-500 hover:bg-rose-50 flex items-center gap-3 transition-colors uppercase tracking-widest">
+                  <LogOut size={16}/> Wyloguj
+               </button>
+           </div>
+       )}
+    </div>
+  );
+};
+
 const LoginScreen = ({ onLogin, error }) => {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
@@ -600,11 +643,14 @@ const CompanyLogo = ({ firma }) => {
   return <h3 className="text-sm font-black text-[#0067b1] uppercase tracking-[0.15em] text-center">{firma}</h3>;
 };
 
-const OfertyModule = ({ user }) => {
+const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
+  
+  // Stan odpowiadający za wybór podpisu na wygenerowanym PDFie
+  const [wystawJako, setWystawJako] = useState('manager');
   
   const konfiguratorRef = useRef(null);
 
@@ -639,10 +685,18 @@ const OfertyModule = ({ user }) => {
   useEffect(() => {
     if (!user) return;
     try {
-        const historyRef = collection(db, 'artifacts', appId, 'users', user.uid, 'oferty');
+        // Zmiana na baze zespołową 'oferty_zespoly' - dzięki temu wszyscy w teamie (np. Ewelina, Beata, Bartek) widzą swoje oferty
+        const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'oferty_zespoly');
         const unsubscribe = onSnapshot(historyRef, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setHistory(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+          const data = [];
+          snapshot.forEach(doc => {
+              const docData = doc.data();
+              // Filtrujemy tylko dla obecnego zespołu (separacja baz między różnymi zespołami)
+              if (docData.teamId === CURRENT_TEAM_ID || !docData.teamId) {
+                  data.push({ id: doc.id, ...docData });
+              }
+          });
+          setHistory(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         }, (err) => console.warn("Błąd pobierania historii (tryb podglądu)", err));
         return () => unsubscribe();
     } catch (e) {
@@ -1099,15 +1153,42 @@ const OfertyModule = ({ user }) => {
       doc.setFontSize(5);
       doc.setFont(getFont("Kiro"), "bold");
       doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
+      
+      // LOGIKA PODPISU - WYBÓR STOPKI (MANAGER vs UŻYTKOWNIK)
       doc.setTextColor(...palladaBlue);
       doc.setFontSize(10);
       
-      const displayName = user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA";
-      doc.text(displayName, 195, currentY + 4, { align: 'right' });
+      let pdfAuthorName = "";
+      let pdfAuthorRole = "";
+      let pdfAuthorPhone = "";
+      let pdfAuthorEmail = "";
+      
+      if (wystawJako === 'manager') {
+          pdfAuthorName = "BARTEK ŻOCHOWSKI";
+          pdfAuthorRole = "MENEDŻER SPRZEDAŻY";
+          pdfAuthorPhone = "";
+          pdfAuthorEmail = "B.ZOCHOWSKI@PALLADA.COM.PL";
+      } else {
+          pdfAuthorName = userProfile?.name ? userProfile.name.toUpperCase() : (user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA");
+          pdfAuthorRole = "DORADCA KLIENTA";
+          pdfAuthorPhone = userProfile?.phone || "";
+          pdfAuthorEmail = userProfile?.email || "";
+      }
+      
+      doc.text(pdfAuthorName, 195, currentY + 4, { align: 'right' });
       
       doc.setTextColor(71, 85, 105);
       doc.setFontSize(6);
-      doc.text("PALLADA UBEZPIECZENIA", 195, currentY + 7, { align: 'right' });
+      doc.text(pdfAuthorRole, 195, currentY + 7, { align: 'right' });
+
+      let contactY = currentY + 11;
+      if (pdfAuthorPhone) {
+          doc.text(pdfAuthorPhone, 195, contactY, { align: 'right' });
+          contactY += 3;
+      }
+      if (pdfAuthorEmail) {
+          doc.text(pdfAuthorEmail.toUpperCase(), 195, contactY, { align: 'right' });
+      }
 
       const totalPages = doc.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
@@ -1212,8 +1293,14 @@ const OfertyModule = ({ user }) => {
     if (!user || oferta.warianty.length === 0) return;
     setSaving(true);
     try {
-      const historyRef = collection(db, 'artifacts', appId, 'users', user.uid, 'oferty');
-      await addDoc(historyRef, { ...oferta, createdAt: serverTimestamp(), userId: user.uid });
+      // Zapisujemy ofertę ze stempelkiem zespołu - wspólna pula dla danego teamu
+      const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'oferty_zespoly');
+      await addDoc(historyRef, { 
+          ...oferta, 
+          createdAt: serverTimestamp(), 
+          authorId: user.uid,
+          teamId: CURRENT_TEAM_ID 
+      });
     } catch (err) { console.error("Błąd zapisu", err); }
     finally { setSaving(false); }
   };
@@ -1284,22 +1371,14 @@ const OfertyModule = ({ user }) => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0067b1] transition-colors" size={16} />
               <input 
                 type="text"
-                placeholder="Wyszukaj ofertę..."
+                placeholder="Wyszukaj ofertę zespołu..."
                 className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-[#0067b1]/5 focus:border-[#0067b1] outline-none transition-all placeholder:text-slate-400 font-bold text-slate-700"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="flex items-center gap-3">
-                <div className="hidden sm:block text-right">
-                  <p className="text-[10px] font-black text-[#0067b1] uppercase tracking-widest tracking-tight">{user ? getUserDisplayName(user.email) : "Jakub Cendrowski"}</p>
-                  <p className="text-[9px] text-slate-500 uppercase font-bold">Menedżer Sprzedaży</p>
-                </div>
-                <div className="w-10 h-10 bg-[#0067b1] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-inner uppercase border-4 border-white">
-                  {user && user.email ? (user.email.charAt(0) + (user.email.split('.')[1] ? user.email.split('.')[1].charAt(0) : '')).toUpperCase() : 'JC'}
-                </div>
-            </div>
+            <TopRightProfile user={user} userProfile={userProfile} onLogout={onLogout} onOpenSettings={onOpenSettings} />
           </div>
 
           <div className="bg-white/80 backdrop-blur-md border-t border-slate-100 px-6 py-2.5 shadow-sm">
@@ -1622,11 +1701,27 @@ const OfertyModule = ({ user }) => {
                   <h2 className="text-[13px] font-black uppercase tracking-[0.2em] text-[#0067b1] flex items-center gap-3 ml-2">
                     <Layers size={22} /> Przygotowane Warianty ({oferta.warianty.length})
                   </h2>
-                  <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                    <button onClick={zapiszWBazie} disabled={saving} className="px-8 py-4 bg-white text-slate-700 font-black rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all"> 
+                  <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+                    
+                    {/* Sektor wyboru stopki dla wygenerowanego PDFa */}
+                    <div className="flex items-center gap-3 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
+                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 shrink-0">
+                            <UserCircle size={14} /> Stopka PDF:
+                        </span>
+                        <select 
+                          className="text-[10px] font-black text-[#0067b1] uppercase tracking-wider outline-none bg-transparent cursor-pointer w-full"
+                          value={wystawJako}
+                          onChange={(e) => setWystawJako(e.target.value)}
+                        >
+                          <option value="manager">Menedżer (Bartek)</option>
+                          <option value="self">Własne (Moje dane)</option>
+                        </select>
+                    </div>
+
+                    <button onClick={zapiszWBazie} disabled={saving} className="px-8 py-4 bg-white text-slate-700 font-black rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all w-full sm:w-auto"> 
                       {saving ? <Loader2 className="animate-spin" size={18} /> : <Save className="text-[#0067b1]" size={18}/>} Zapisz ofertę 
                     </button>
-                    <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"> 
+                    <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto"> 
                       <FileText size={18} /> Generuj PDF oferty
                     </button>
                   </div>
@@ -1735,6 +1830,11 @@ const OfertyModule = ({ user }) => {
 
 export default function AppWrapper() {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: '', phone: '', email: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const [init, setInit] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -1816,22 +1916,41 @@ export default function AppWrapper() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async (email, pass) => {
-    setLoginError('');
-    try {
-        await signInWithEmailAndPassword(auth, email, pass);
-    } catch (err) {
-        setLoginError('Błędne dane logowania.');
-    }
-  };
+  useEffect(() => {
+    if (!user) return;
+    const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+    const unsubscribe = onSnapshot(profileRef, (docSnap) => {
+       if (docSnap.exists()) {
+          setUserProfile(docSnap.data());
+       } else {
+          setUserProfile({ name: getUserDisplayName(user.email), phone: '', email: user.email || '' });
+       }
+    }, (err) => console.warn("Profile fetch error:", err));
+    return () => unsubscribe();
+  }, [user]);
 
-  const handleLogout = async () => {
-    try {
-        await signOut(auth);
-        setActiveTab('dashboard');
-    } catch (err) {
-        console.error("Logout error", err);
+  useEffect(() => {
+    if (userProfile) {
+       setProfileForm({
+          name: userProfile.name || '',
+          phone: userProfile.phone || '',
+          email: userProfile.email || ''
+       });
     }
+  }, [userProfile]);
+
+  const handleSaveProfile = async () => {
+     if (!user) return;
+     setSavingProfile(true);
+     try {
+        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+        await setDoc(profileRef, profileForm);
+        setShowSettings(false);
+     } catch (e) {
+        console.error(e);
+     } finally {
+        setSavingProfile(false);
+     }
   };
 
   useEffect(() => {
@@ -1839,7 +1958,13 @@ export default function AppWrapper() {
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'pojazdy');
     const unsubscribe = onSnapshot(q, (snap) => {
       const data = [];
-      snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+      snap.forEach(d => {
+        const docData = d.data();
+        // Pobieramy rekordy TYLKO dla obecnie przypisanego zespołu, aby odizolować bazy!
+        if (docData.teamId === CURRENT_TEAM_ID || !docData.teamId) {
+          data.push({ id: d.id, ...docData });
+        }
+      });
       setRecords(data);
     });
     return () => unsubscribe();
@@ -1906,15 +2031,13 @@ export default function AppWrapper() {
     try {
         setActionStatus('saving');
         
-        // --- SEPARACJA LOGIKI ZAPISU DO BAZY ---
-        // Zapis do bazy nie przerwie działania funkcji w razie błędu 
-        // np. przy braku połączenia lub braku autoryzacji w trybie Preview
+        // Zapis do bazy ze znacznikiem zespołu aby nie wchodziło w parade innym teamom
         try {
             if (user) {
                 const docId = formData.nrRejestracyjny.replace(/\s/g, '').toUpperCase();
                 const { numerPolisy, dataRozwiazania, dataPodpisania, miejscowoscWystawienia, art, ...dataToSave } = formData;
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pojazdy', docId), {
-                    ...dataToSave, updatedAt: new Date().toISOString(), teamId: 'pallada_main'
+                    ...dataToSave, updatedAt: new Date().toISOString(), teamId: CURRENT_TEAM_ID
                 });
             }
         } catch (dbErr) {
@@ -1949,7 +2072,6 @@ export default function AppWrapper() {
         
         const palladaBlue = [0, 103, 177]; 
         const slate500 = [100, 116, 139];
-        // FIX: Zmienna slate400 była używana niżej, ale nie zadeklarowana!
         const slate400 = [148, 163, 184]; 
 
         const getFont = (preferred) => docPdf.getFontList()[preferred] ? preferred : "helvetica";
@@ -2039,7 +2161,7 @@ export default function AppWrapper() {
         drawDataBlock(75, blockY, "Marka i model pojazdu", `${formData.marka} ${formData.model}`.toUpperCase());
         drawDataBlock(140, blockY, "Numer rejestracyjny", formData.nrRejestracyjny.toUpperCase());
         const drawCb = (y, isChecked, textLines) => {
-            docPdf.setDrawColor(...slate400); // FIX: Użycie naprawionej zmiennej
+            docPdf.setDrawColor(...slate400); 
             docPdf.setLineWidth(0.3);
             docPdf.rect(20, y - 4, 5, 5);
             if (isChecked) {
@@ -2065,7 +2187,6 @@ export default function AppWrapper() {
         docPdf.setDrawColor(...slate400);
         docPdf.setLineWidth(0.2);
         
-        // FIX: Zamiana na standardowe setLineDash (niektóre wersje jsPDF odrzucają setLineDashPattern)
         docPdf.setLineDash([1, 1], 0); 
         
         docPdf.rect(15, signY - 17, 60, 30); 
@@ -2095,22 +2216,40 @@ export default function AppWrapper() {
     }
   };
 
+  const handleLogin = async (email, pass) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      setLoginError('');
+    } catch (error) {
+      setLoginError('Nieprawidłowy adres e-mail lub hasło.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Błąd wylogowania', error);
+    }
+  };
+
   const renderContent = () => {
     if (activeTab === 'dashboard') {
       return (
         <div className="p-6 md:p-12 space-y-12 animate-in fade-in duration-500" style={styles.body}>
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <p className="text-[#0067b1] font-bold text-xs uppercase tracking-[0.2em] mb-2">System Egida</p>
               <h1 className="text-4xl font-black text-slate-900" style={styles.header}>Pulpit Agenta</h1>
             </div>
+            <TopRightProfile user={user} userProfile={userProfile} onLogout={handleLogout} onOpenSettings={() => setShowSettings(true)} />
           </header>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-[#0067b1] p-8 rounded-[2.5rem] text-white shadow-2xl shadow-blue-200 flex flex-col justify-between overflow-hidden relative group">
                 <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
                 <div>
                   <Database className="mb-4 opacity-50" size={32} />
-                  <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Baza Klientów</p>
+                  <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Baza Klientów Zespołu</p>
                   <p className="text-6xl font-black mt-2 leading-none" style={styles.header}>{records.length}</p>
                 </div>
                 <div className="mt-8 flex items-center gap-2 text-sm font-bold text-blue-200 cursor-pointer hover:text-white" onClick={() => setActiveTab('baza')}>
@@ -2145,12 +2284,15 @@ export default function AppWrapper() {
                       <p className="text-slate-400 font-medium text-sm">Generator dokumentu</p>
                     </div>
                 </div>
-                <button onClick={() => setShowResetConfirm(true)} className="px-8 py-3 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold text-sm hover:bg-rose-50 transition-all shadow-sm">Wyczyść pola</button>
+                <div className="flex items-center gap-4">
+                   <button onClick={() => setShowResetConfirm(true)} className="px-8 py-3 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold text-sm hover:bg-rose-50 transition-all shadow-sm">Wyczyść pola</button>
+                   <TopRightProfile user={user} userProfile={userProfile} onLogout={handleLogout} onOpenSettings={() => setShowSettings(true)} />
+                </div>
             </header>
             <div className="space-y-8">
                 <section className="bg-[#0067b1] rounded-[2.5rem] p-8 shadow-2xl shadow-blue-100 relative overflow-hidden">
                     <div className="relative z-10">
-                      <label className="block text-xs font-bold text-blue-100 mb-3 uppercase tracking-[0.2em]">Szybkie wyszukiwanie pojazdu</label>
+                      <label className="block text-xs font-bold text-blue-100 mb-3 uppercase tracking-[0.2em]">Szybkie wyszukiwanie pojazdu zespołu</label>
                       <div className="flex flex-col sm:flex-row gap-3">
                           <div className="relative flex-1">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={20} />
@@ -2263,7 +2405,7 @@ export default function AppWrapper() {
       );
     }
     if (activeTab === 'oferty') {
-      return <OfertyModule user={user} />;
+      return <OfertyModule user={user} userProfile={userProfile} onLogout={handleLogout} onOpenSettings={() => setShowSettings(true)} />;
     }
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center" style={styles.body}>
@@ -2314,23 +2456,6 @@ export default function AppWrapper() {
             </button>
           ))}
         </nav>
-        <div className="p-6 mt-auto">
-          <div className={`flex items-center gap-4 p-3 bg-slate-50 rounded-[2rem] border border-slate-100 ${!isSidebarOpen && 'justify-center'}`}>
-            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100 shrink-0">
-              <UserCircle size={24} className="text-[#0067b1]" />
-           </div>
-           {isSidebarOpen && (
-              <div className="overflow-hidden">
-                <p className="text-xs font-black text-slate-800 truncate">{user ? getUserDisplayName(user.email) : "Bartek Żochowski"}</p>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Administrator</p>
-             </div>
-            )}
-          </div>
-          <button onClick={handleLogout} className={`w-full flex items-center gap-4 p-4 mt-4 text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-50 rounded-2xl transition-all ${!isSidebarOpen && 'justify-center'}`}>
-            <LogOut size={20} />
-            {isSidebarOpen && <span>Wyloguj</span>}
-          </button>
-        </div>
       </aside>
       <main 
         className="flex-1 overflow-y-auto bg-[#fdfdfe] relative"
@@ -2384,6 +2509,34 @@ export default function AppWrapper() {
           <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-12">
               <CheckSquare className="text-white" /> 
               <span className="font-black text-xs uppercase tracking-widest">Pobrano dokument!</span>
+          </div>
+      )}
+
+      {showSettings && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4" onClick={() => setShowSettings(false)}>
+              <div className="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-black text-2xl text-slate-900" style={styles.header}>Twój Profil</h3>
+                      <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-rose-500 transition-colors"><X size={24}/></button>
+                  </div>
+                  <div className="space-y-4">
+                      <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Imię i nazwisko</label>
+                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} placeholder="np. Jan Kowalski" />
+                      </div>
+                      <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Numer telefonu</label>
+                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} placeholder="np. +48 123 456 789" />
+                      </div>
+                      <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 ml-1">Adres e-mail</label>
+                          <input type="email" className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800" value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} placeholder="np. jan.kowalski@pallada.pl" />
+                      </div>
+                  </div>
+                  <button onClick={handleSaveProfile} disabled={savingProfile} className="w-full mt-8 py-5 bg-[#0067b1] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-blue-700 transition-all flex justify-center items-center gap-2">
+                      {savingProfile ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>} Zapisz dane
+                  </button>
+              </div>
           </div>
       )}
     </div>
