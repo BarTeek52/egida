@@ -648,7 +648,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
   
-  // Zmiana na 'self' aby domyślnie zaciągało poprawne dane zalogowanego użytkownika
   const [wystawJako, setWystawJako] = useState('self');
   
   const konfiguratorRef = useRef(null);
@@ -1150,11 +1149,12 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       let pdfAuthorEmail = "";
       
       if (wystawJako === 'manager') {
-          pdfAuthorName = "BARTEK ŻOCHOWSKI";
+          pdfAuthorName = "Bartek Żochowski";
           pdfAuthorPhone = ""; 
           pdfAuthorEmail = "b.zochowski@pallada.com.pl";
       } else {
-          pdfAuthorName = userProfile?.name ? userProfile.name.toUpperCase() : (user ? getUserDisplayName(user.email).toUpperCase() : "DORADCA PALLADA");
+          const rawName = userProfile?.name || (user ? getUserDisplayName(user.email) : "Doradca Pallada");
+          pdfAuthorName = formatTitleCaseOferty(rawName);
           pdfAuthorPhone = userProfile?.phone || "";
           pdfAuthorEmail = userProfile?.email || "";
       }
@@ -1169,24 +1169,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       doc.text(pdfAuthorName, 195, currentY + 4, { align: 'right' });
 
       let contactY = currentY + 8;
-      
-      if (pdfAuthorPhone) {
-          doc.setFontSize(8);
-          doc.setTextColor(71, 85, 105);
-          doc.text(pdfAuthorPhone, 195, contactY, { align: 'right' });
-          
-          // Rysowanie ikonki telefonu
-          const pW = doc.getTextWidth(pdfAuthorPhone);
-          const iconX = 195 - pW - 3;
-          const iconY = contactY - 2.2;
-          
-          doc.setDrawColor(...palladaBlue);
-          doc.setLineWidth(0.2);
-          doc.roundedRect(iconX, iconY, 1.8, 2.8, 0.3, 0.3, 'S'); // obudowa
-          doc.line(iconX + 0.5, iconY + 2.2, iconX + 1.3, iconY + 2.2); // przycisk/ekranik
-          
-          contactY += 4;
-      }
 
       if (pdfAuthorEmail) {
           const mailLower = pdfAuthorEmail.toLowerCase();
@@ -1204,6 +1186,24 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
           doc.rect(iconX, iconY, 2.5, 1.8, 'S'); // obrys koperty
           doc.line(iconX, iconY, iconX + 1.25, iconY + 0.9); // lewe skrzydło listu
           doc.line(iconX + 2.5, iconY, iconX + 1.25, iconY + 0.9); // prawe skrzydło listu
+          
+          contactY += 4;
+      }
+      
+      if (pdfAuthorPhone) {
+          doc.setFontSize(8);
+          doc.setTextColor(71, 85, 105);
+          doc.text(pdfAuthorPhone, 195, contactY, { align: 'right' });
+          
+          // Rysowanie ikonki telefonu
+          const pW = doc.getTextWidth(pdfAuthorPhone);
+          const iconX = 195 - pW - 3;
+          const iconY = contactY - 2.2;
+          
+          doc.setDrawColor(...palladaBlue);
+          doc.setLineWidth(0.2);
+          doc.roundedRect(iconX, iconY, 1.8, 2.8, 0.3, 0.3, 'S'); // obudowa
+          doc.line(iconX + 0.5, iconY + 2.2, iconX + 1.3, iconY + 2.2); // przycisk/ekranik
       }
 
       const totalPages = doc.internal.getNumberOfPages();
