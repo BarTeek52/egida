@@ -785,7 +785,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       doc.setFont(getFont("Kiro"), "bold");
       doc.setFontSize(11);
       doc.setTextColor(...slate800);
-      doc.text("PROPOZYCJA UBEZPIECZENIA POJAZDU", 195, 20, { align: 'right' });
+      doc.text("Propozycja ubezpieczenia pojazdu", 195, 20, { align: 'right' });
       
       doc.setFontSize(7);
       doc.setTextColor(...slate500);
@@ -830,9 +830,11 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
           }
       };
 
-      drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, "Ubezpieczony:", oferta.klient.nazwa, currentY);
+      const ubezpLabel = oferta.klient.czyLeasing ? "Użytkownik:" : "Ubezpieczony:";
+      drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, ubezpLabel, oferta.klient.nazwa, currentY);
       currentY += 6;
-      drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, oferta.klient.czyLeasing ? "Właściciel:" : "", oferta.klient.czyLeasing ? oferta.klient.wlasciciel : "", currentY);
+      const leasingOdp = oferta.klient.czyLeasing ? "TAK" : "NIE";
+      drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, "Leasing/Kredyt:", leasingOdp, currentY);
       currentY += 6;
       drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
       currentY += 14;
@@ -1431,9 +1433,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                         <input type="checkbox" checked={oferta.klient.czyLeasing} onChange={(e) => handleInputChange('klient', 'czyLeasing', e.target.checked)} className="w-6 h-6 rounded-lg text-[#0067b1] border-slate-300 focus:ring-[#0067b1]" />
                         <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Leasing / Wynajem</span>
                     </div>
-                    {oferta.klient.czyLeasing && (
-                      <input className="w-full px-5 py-4 bg-amber-50/50 border-2 border-amber-100 rounded-2xl outline-none text-sm font-black text-slate-800 placeholder:text-amber-400/50 shadow-sm" value={oferta.klient.wlasciciel} onChange={(e) => handleInputChange('klient', 'wlasciciel', e.target.value)} placeholder="Wpisz leasingodawcę..." />
-                    )}
                   </div>
                 </section>
 
@@ -1808,10 +1807,10 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                           </div>
                         </div>
                         <div className="pt-10 border-t border-slate-100 text-center mt-8">
-                           <div className="flex items-center justify-center gap-1">
-                            <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
-                            <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
-                           </div>
+                            <div className="flex items-center justify-center gap-1">
+                             <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
+                             <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
+                            </div>
                         </div>
                       </div>
                     </div>
@@ -1823,9 +1822,9 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
         </main>
 
         <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
-           <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="max-w-7xl mx-auto flex justify-between items-center">
             <span><Settings size={14} className="inline mr-2"/> EIGDA OS v8.0</span>
-             <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
+              <div className="flex items-center gap-4"> <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Status: Połączono </div>
           </div>
        </footer>
       </div>
@@ -1843,7 +1842,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   );
 }
 
-export default function AppWrapper() {
+export default function App() {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -2298,8 +2297,8 @@ export default function AppWrapper() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                   <button onClick={() => setShowResetConfirm(true)} className="px-8 py-3 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold text-sm hover:bg-rose-50 transition-all shadow-sm">Wyczyść pola</button>
-                   <TopRightProfile user={user} userProfile={userProfile} onLogout={handleLogout} onOpenSettings={() => setShowSettings(true)} />
+                    <button onClick={() => setShowResetConfirm(true)} className="px-8 py-3 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold text-sm hover:bg-rose-50 transition-all shadow-sm">Wyczyść pola</button>
+                    <TopRightProfile user={user} userProfile={userProfile} onLogout={handleLogout} onOpenSettings={() => setShowSettings(true)} />
                 </div>
             </header>
             <div className="space-y-8">
