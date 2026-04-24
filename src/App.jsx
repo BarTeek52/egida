@@ -675,8 +675,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   // Dodana definicja nowych zakładek z ikonami (moduł ofert)
   const productTabs = [
     { id: 'auto', label: 'Auto', icon: CarFront },
-    { id: 'mieszkanie', label: 'Mieszkanie', icon: Building },
-    { id: 'dom', label: 'Dom', icon: Home },
+    { id: 'nieruchomosc', label: 'Nieruchomość', icon: Building },
     { id: 'podroz', label: 'Podróż', icon: Plane },
     { id: 'rezygnacja', label: 'Rezygnacja', icon: CalendarX },
   ];
@@ -1412,12 +1411,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       <div className="min-h-screen bg-[#f0f4f8] text-[#1e293b] pb-40 w-full" style={{ fontFamily: 'Kiro, sans-serif' }}>
         <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-[#0067b1] rounded-xl flex items-center justify-center text-white shadow-lg">
-                <Zap size={20} fill="currentColor" />
-              </div>
-              <span className="text-lg font-black text-[#0067b1] hidden sm:block tracking-tighter uppercase" style={{ fontFamily: 'Semplicita Pro' }}>EIGDA</span>
-            </div>
 
             <div className="flex-1 max-w-xl relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0067b1] transition-colors" size={16} />
@@ -2547,15 +2540,6 @@ export default function App() {
           }
         }}
       >
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            setSidebarOpen(!isSidebarOpen);
-          }}
-          className="absolute left-4 top-4 hidden md:flex p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-[#0067b1] shadow-sm z-50 transition-all"
-        >
-          {isSidebarOpen ? <X size={16} /> : <Menu size={16} />}
-        </button>
         {renderContent()}
       </main>
       {showResetConfirm && (
