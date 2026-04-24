@@ -853,9 +853,9 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               });
               
               doc.setLineWidth(0.25);
-              doc.line(60, hStartY + 7, 60, endY - 0.2);
+              doc.line(50, hStartY + 7, 50, endY - 0.2);
               doc.line(105, hStartY + 7, 105, endY - 0.2);
-              doc.line(155, hStartY + 7, 155, endY - 0.2);
+              doc.line(160, hStartY + 7, 160, endY - 0.2);
               
               doc.setLineWidth(0.4);
               doc.roundedRect(15, hStartY, 180, endY - hStartY, 2, 2, 'S');
@@ -886,7 +886,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               
               let c2Y_sim = startY + 7;
               const addC2 = (text) => { 
-                  const lines = doc.splitTextToSize(text, 36);
+                  const lines = doc.splitTextToSize(text, 46);
                   c2Y_sim += 5.5 + ((lines.length - 1) * 3.5); 
               };
               if (w.tryb !== 'AC') addC2("OC posiadacza pojazdu");
@@ -908,7 +908,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
 
               let c3Y_sim = startY + 7;
               const addC3 = (text) => {
-                  const lines = doc.splitTextToSize(text, 43);
+                  const lines = doc.splitTextToSize(text, 48);
                   c3Y_sim += (lines.length * 4);
               };
               if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) addC3("Auto wartość 100% (stała suma)");
@@ -953,23 +953,23 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
 
               doc.setFillColor(248, 250, 252);
               if (isLastRow) {
-                  doc.roundedRect(15, startY, 45, maxY - startY, 2, 2, 'F');
-                  doc.rect(18, startY, 42, maxY - startY, 'F'); 
-                  doc.rect(15, startY, 45, maxY - startY - 3, 'F'); 
+                  doc.roundedRect(15, startY, 35, maxY - startY, 2, 2, 'F');
+                  doc.rect(18, startY, 32, maxY - startY, 'F'); 
+                  doc.rect(15, startY, 35, maxY - startY - 3, 'F'); 
               } else {
-                  doc.rect(15, startY, 45, maxY - startY, 'F');
+                  doc.rect(15, startY, 35, maxY - startY, 'F');
               }
 
               doc.setFillColor(...blue50);
               if (isLastRow) {
-                  doc.roundedRect(155, startY, 40, maxY - startY, 2, 2, 'F');
-                  doc.rect(155, startY, 37, maxY - startY, 'F'); 
-                  doc.rect(155, startY, 40, maxY - startY - 3, 'F'); 
+                  doc.roundedRect(160, startY, 35, maxY - startY, 2, 2, 'F');
+                  doc.rect(160, startY, 32, maxY - startY, 'F'); 
+                  doc.rect(160, startY, 35, maxY - startY - 3, 'F'); 
               } else {
-                  doc.rect(155, startY, 40, maxY - startY, 'F');
+                  doc.rect(160, startY, 35, maxY - startY, 'F');
               }
 
-              const colCenterX = 37.5; 
+              const colCenterX = 32.5; 
               
               doc.setFillColor(...palladaBlue);
               const tagW = 16;
@@ -1042,15 +1042,15 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               const drawCheckReal = (text, type) => {
                   doc.setDrawColor(...palladaBlue);
                   doc.setLineWidth(0.3);
-                  doc.circle(62.5, c2Y - 1, 1.8, 'S');
-                  doc.line(61.5, c2Y - 1, 62.2, c2Y - 0.2);
-                  doc.line(62.2, c2Y - 0.2, 63.5, c2Y - 2);
+                  doc.circle(52.5, c2Y - 1, 1.8, 'S');
+                  doc.line(51.5, c2Y - 1, 52.2, c2Y - 0.2);
+                  doc.line(52.2, c2Y - 0.2, 53.5, c2Y - 2);
                   
                   doc.setTextColor(...slate800);
                   doc.setFontSize(7.5);
                   doc.setFont(getFont("Kiro"), "bold");
-                  const lines = doc.splitTextToSize(text, 36);
-                  doc.text(lines, 68, c2Y);
+                  const lines = doc.splitTextToSize(text, 46);
+                  doc.text(lines, 58, c2Y);
                   c2Y += 5.5 + ((lines.length - 1) * 3.5);
               };
 
@@ -1079,7 +1079,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   doc.setTextColor(71, 85, 105);
                   doc.setFontSize(7);
                   doc.setFont(getFont("Kiro"), "normal");
-                  const lines = doc.splitTextToSize(text, 43);
+                  const lines = doc.splitTextToSize(text, 48);
                   doc.text(lines, 110, c3Y);
                   c3Y += (lines.length * 4);
               };
@@ -1107,7 +1107,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               doc.setTextColor(...slate400);
               doc.setFontSize(6.5);
               doc.setFont(getFont("Kiro"), "bold");
-              doc.text("SKŁADKA ŁĄCZNA", 175, midY - 6.5, { align: 'center' });
+              doc.text("SKŁADKA ŁĄCZNA", 177.5, midY - 6.5, { align: 'center' });
               
               const priceParts = w.skladka.split(',');
               const priceStr1 = priceParts[0];
@@ -1120,7 +1120,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               const p2Width = doc.getTextWidth(priceStr2);
               
               const totalPWidth = p1Width + p2Width;
-              const startX = 175 - (totalPWidth / 2);
+              const startX = 177.5 - (totalPWidth / 2);
               
               doc.setTextColor(...palladaBlue);
               doc.setFontSize(18);
@@ -1134,8 +1134,8 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               doc.setFillColor(255, 255, 255);
               doc.setDrawColor(204, 224, 239);
               doc.setLineWidth(0.2);
-              doc.roundedRect(175 - ratyWidth/2, midY + 4, ratyWidth, 4.5, 1, 1, 'FD'); 
-              doc.text(ratyText, 175, midY + 7.2, { align: 'center' });
+              doc.roundedRect(177.5 - ratyWidth/2, midY + 4, ratyWidth, 4.5, 1, 1, 'FD'); 
+              doc.text(ratyText, 177.5, midY + 7.2, { align: 'center' });
 
               if (!isLastRow) {
                   pageSeparators.push(maxY);
