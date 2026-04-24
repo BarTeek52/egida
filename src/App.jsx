@@ -57,7 +57,11 @@ import {
   Fingerprint,
   Star,
   Wrench,
-  AlertTriangle
+  AlertTriangle,
+  CarFront,
+  Home,
+  Plane,
+  CalendarX
 } from 'lucide-react';
 
 // --- KONFIGURACJA I INICJALIZACJA FIREBASE (EGIDA) ---
@@ -648,6 +652,9 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
   
+  // Zaktualizowano domyślnie aktywną zakładkę z 'Komunikacja' na 'auto'
+  const [wybranyProdukt, setWybranyProdukt] = useState('auto');
+  
   const [wystawJako, setWystawJako] = useState('self');
   
   const konfiguratorRef = useRef(null);
@@ -664,6 +671,15 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
     pojazd: { marka: "", model: "", rokProdukcji: "", nrRejestracyjny: "", vin: "" },
     warianty: []
   });
+
+  // Dodana definicja nowych zakładek z ikonami (moduł ofert)
+  const productTabs = [
+    { id: 'auto', label: 'Auto', icon: CarFront },
+    { id: 'mieszkanie', label: 'Mieszkanie', icon: Building },
+    { id: 'dom', label: 'Dom', icon: Home },
+    { id: 'podroz', label: 'Podróż', icon: Plane },
+    { id: 'rezygnacja', label: 'Rezygnacja', icon: CalendarX },
+  ];
 
   const [nowyWariant, setNowyWariant] = useState({
     firma: BAZA_UBEZPIECZYCIELI[0],
@@ -1167,7 +1183,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       doc.text("Niniejsza propozycja ma charakter informacyjny i może ulec zmianie w przypadku zmiany parametrów pojazdu lub ostatecznej weryfikacji", 15, currentY + 4);
       doc.text("historii ubezpieczenia w systemie UFG. Niniejszy dokument nie stanowi oferty handlowej w rozumieniu art. 66§1 Kodeksu Cywilnego.", 15, currentY + 7);
 
-      // LOGIKA PODPISU - WYBÓR STOPKI Z NOWYM FORMATOWANIEM I IKONAMI
       let pdfAuthorName = "";
       let pdfAuthorPhone = "";
       let pdfAuthorEmail = "";
@@ -1200,16 +1215,15 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
           doc.setTextColor(71, 85, 105);
           doc.text(mailLower, 195, contactY, { align: 'right' });
           
-          // Rysowanie ikonki e-mail (koperta)
           const eW = doc.getTextWidth(mailLower);
           const iconX = 195 - eW - 4;
           const iconY = contactY - 2;
           
           doc.setDrawColor(...palladaBlue);
           doc.setLineWidth(0.2);
-          doc.rect(iconX, iconY, 2.5, 1.8, 'S'); // obrys koperty
-          doc.line(iconX, iconY, iconX + 1.25, iconY + 0.9); // lewe skrzydło listu
-          doc.line(iconX + 2.5, iconY, iconX + 1.25, iconY + 0.9); // prawe skrzydło listu
+          doc.rect(iconX, iconY, 2.5, 1.8, 'S'); 
+          doc.line(iconX, iconY, iconX + 1.25, iconY + 0.9); 
+          doc.line(iconX + 2.5, iconY, iconX + 1.25, iconY + 0.9); 
           
           contactY += 4;
       }
@@ -1219,15 +1233,14 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
           doc.setTextColor(71, 85, 105);
           doc.text(pdfAuthorPhone, 195, contactY, { align: 'right' });
           
-          // Rysowanie ikonki telefonu
           const pW = doc.getTextWidth(pdfAuthorPhone);
           const iconX = 195 - pW - 3;
           const iconY = contactY - 2.2;
           
           doc.setDrawColor(...palladaBlue);
           doc.setLineWidth(0.2);
-          doc.roundedRect(iconX, iconY, 1.8, 2.8, 0.3, 0.3, 'S'); // obudowa
-          doc.line(iconX + 0.5, iconY + 2.2, iconX + 1.3, iconY + 2.2); // przycisk/ekranik
+          doc.roundedRect(iconX, iconY, 1.8, 2.8, 0.3, 0.3, 'S'); 
+          doc.line(iconX + 0.5, iconY + 2.2, iconX + 1.3, iconY + 2.2); 
       }
 
       const totalPages = doc.internal.getNumberOfPages();
@@ -1436,411 +1449,446 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col gap-10">
-            
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          
+          {/* Zaktualizowany widok zakładek z Ikonami */}
+          <div className="flex bg-white p-1.5 rounded-[1.5rem] border border-slate-200 shadow-sm mb-8 overflow-x-auto no-scrollbar gap-2">
+            {productTabs.map(prod => {
+              const Icon = prod.icon;
+              const isActive = wybranyProdukt === prod.id;
               
-              <div className="lg:col-span-4 space-y-6">
-                <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
-                  <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
-                    <LayoutDashboard size={18} /> Podmiot ubezpieczony
-                  </h2>
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ubezpieczony (Imię i Nazwisko / Firma)</label>
-                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800 shadow-sm" value={oferta.klient.nazwa} onChange={(e) => handleInputChange('klient', 'nazwa', e.target.value, formatTitleCaseOferty)} />
-                    </div>
+              return (
+                <button
+                  key={prod.id}
+                  onClick={() => setWybranyProdukt(prod.id)}
+                  className={`
+                    flex flex-1 min-w-max items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-widest
+                    ${isActive 
+                      ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-md' 
+                      : 'text-slate-500 hover:text-[#0067b1] hover:bg-slate-50'
+                    }
+                  `}
+                >
+                  <Icon size={18} strokeWidth={2.5} className={isActive ? "text-white" : "text-slate-400"} />
+                  <span>{prod.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-                    <div className="flex items-center gap-4 bg-blue-50/30 p-4 rounded-2xl border border-blue-100 shadow-sm">
-                        <input type="checkbox" checked={oferta.klient.czyLeasing} onChange={(e) => handleInputChange('klient', 'czyLeasing', e.target.checked)} className="w-6 h-6 rounded-lg text-[#0067b1] border-slate-300 focus:ring-[#0067b1]" />
-                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Leasing / Wynajem</span>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
-                  <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
-                    <Car size={18} /> Specyfikacja pojazdu
-                  </h2>
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Marka</label>
-                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.marka} onChange={(e) => handleInputChange('pojazd', 'marka', e.target.value, formatTitleCaseOferty)} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Model</label>
-                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.model} onChange={(e) => handleInputChange('pojazd', 'model', e.target.value, formatTitleCaseOferty)} />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rok produkcji</label>
-                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nr Rejestracyjny</label>
-                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Fingerprint size={12} className="text-[#0067b1]"/> Numer VIN</label>
-                      <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} />
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <div className="lg:col-span-8 space-y-10">
-                <section className="bg-white rounded-[2.5rem] p-10 shadow-xl border-t-8 border-[#0067b1] relative overflow-hidden shadow-slate-200/60">
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
-                    
-                    <div className="md:col-span-5 space-y-8" ref={konfiguratorRef}>
-                      <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 shadow-inner">
-                        {['OC', 'OC+AC', 'AC'].map(id => (
-                          <button 
-                            key={id} 
-                            onClick={() => {
-                              setNowyWariant({...nowyWariant, tryb: id});
-                              setNowyWariant(prev => {
-                                const dod = {...prev.dodatki};
-                                delete dod['klauzule_katalog'];
-                                delete dod['klauzule_katalog_biznes'];
-                                return {...prev, dodatki: dod};
-                              });
-                            }} 
-                            className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
-                          > 
-                            {id} 
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building size={16} className="text-[#0067b1]"/> Towarzystwo</label>
-                          <select className="w-full px-5 py-5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
-                            {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
-                          </select>
-                        </div>
-
-                        {nowyWariant.tryb !== 'OC' && (
-                          <div className="space-y-3 relative">
-                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
-                            <div className="relative">
-                              <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
-                              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="space-y-2 relative">
-                          <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
-                          <div className="relative">
-                            <input type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
-                            <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-sm tracking-widest">PLN</span>
-                          </div>
-                          <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
-                            {[1, 2, 4, 12].map(raty => (
-                              <button key={raty} onClick={() => setNowyWariant({...nowyWariant, liczbaRat: raty})} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-wider ${nowyWariant.liczbaRat === raty ? 'bg-[#0067b1] text-white' : 'text-slate-500'}`}> {raty === 1 ? '1 Rata' : `${raty} Raty`} </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="hidden md:block mt-8">
-                        {validationError && (
-                          <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
-                            <XCircle size={18} /> {validationError}
-                          </div>
-                        )}
-                        <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
-                          <Plus size={26} /> Dodaj wariant
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-7 space-y-8">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-5">
-                        <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><Package size={20} /> Konfiguracja Rozszerzeń</p>
-                        <Layers size={20} className="text-[#0067b1]/30" />
-                      </div>
-
-                      <div className="space-y-10 bg-blue-50/40 p-8 rounded-[3.5rem] border border-blue-100 shadow-inner">
-                        {(nowyWariant.tryb === 'OC+AC' || nowyWariant.tryb === 'AC') && (
-                          <div className="space-y-4">
-                            <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
-                            
-                            <div className={`grid grid-cols-2 lg:grid-cols-4 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
-                              {['Kosztorys', 'Minicasco', 'Partnerski', 'ASO'].map(metoda => (
-                                <button 
-                                  key={metoda} 
-                                  onClick={() => setNowyWariant({
-                                    ...nowyWariant, 
-                                    zakresAC: {
-                                      ...nowyWariant.zakresAC, 
-                                      metodaNaprawy: metoda,
-                                      wariantWarta: (nowyWariant.firma === 'Warta' && metoda === 'ASO') ? (nowyWariant.zakresAC.wariantWarta || 'Komfort') : ''
-                                    }
-                                  })} 
-                                  className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
-                                > 
-                                  {metoda} 
-                                </button>
-                              ))}
-                            </div>
-
-                            {nowyWariant.firma === 'Warta' && nowyWariant.zakresAC.metodaNaprawy === 'ASO' && (
-                              <div className="animate-in fade-in slide-in-from-top-2">
-                                <div className="flex gap-2 p-1.5 bg-blue-50/80 rounded-2xl border border-blue-100 shadow-inner">
-                                  <button 
-                                    onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Standard'}})} 
-                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Standard' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
-                                  > 
-                                    <AlertTriangle size={14} /> Warta Standard
-                                  </button>
-                                  <button 
-                                    onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Komfort'}})} 
-                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Komfort' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
-                                  > 
-                                    <ShieldCheck size={14} /> Warta Komfort
-                                  </button>
-                                </div>
-                                <div className="mt-2.5 text-[9px] font-bold text-[#0067b1]/70 uppercase tracking-widest text-center px-2 flex items-center justify-center gap-1.5">
-                                  <Activity size={12} />
-                                  {nowyWariant.zakresAC.wariantWarta === 'Komfort' 
-                                    ? "Zniesiony udział własny dla młodych kierowców (Brak potrąceń)." 
-                                    : "Udział własny 10% przy młodych kierowcach (aby wykupić zaznacz podwyższone ryzyko)."}
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
-                                <Activity size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Stała wartość pojazdu</span>
-                              </button>
-                              <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
-                                <ShieldCheck size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Brak redukcji sumy</span>
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-4">
-                          <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Star size={14}/> Dodatki ubezpieczyciela</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                            {aktualnaKonfigDodatkow
-                              .filter(dodatek => !dodatek.showIn || dodatek.showIn.includes(nowyWariant.tryb))
-                              .map(dodatek => {
-                                const IconComponent = dodatek.icon || Package;
-                                const isActive = !!nowyWariant.dodatki[dodatek.id];
-                                const isExpanded = expandedDodatek === dodatek.id;
-                                
-                                const isMulti = !!dodatek.getMultiOptions;
-                                const currentMultiOptions = isMulti ? dodatek.getMultiOptions(nowyWariant.tryb) : [];
-                                
-                                let displayLabel = dodatek.label;
-                                if (isActive && !isMulti && typeof nowyWariant.dodatki[dodatek.id] === 'string' && nowyWariant.dodatki[dodatek.id] !== 'true') {
-                                  displayLabel = `${dodatek.label}: ${nowyWariant.dodatki[dodatek.id]}`;
-                                } else if (isActive && isMulti && Array.isArray(nowyWariant.dodatki[dodatek.id])) {
-                                  displayLabel = `${dodatek.label} (${nowyWariant.dodatki[dodatek.id].length})`;
-                                }
-
-                                return (
-                                  <div key={dodatek.id} className="flex flex-col gap-2">
-                                    <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
-                                      <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50 text-[#0067b1]'}`}><IconComponent size={24} /></div>
-                                      <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
-                                      {isActive && <CheckCircle size={16} className="absolute top-3 right-3 text-white/80" />}
-                                    </button>
-                                    
-                                    {isExpanded && !isMulti && dodatek.options && (
-                                      <div className="flex flex-col gap-1.5 animate-in slide-in-from-top-2">
-                                        {dodatek.options.map(opt => (
-                                          <button key={opt} onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e)} className="py-3 px-2 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white border-2 border-blue-50 text-[#0067b1] hover:bg-[#0067b1] hover:text-white shadow-sm"> {opt} </button>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    {isExpanded && isMulti && (
-                                       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#001c3d]/60 p-6 backdrop-blur-md animate-in fade-in" onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }}>
-                                        <div className="bg-white rounded-[3.5rem] w-full max-w-xl shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 border border-white/20" onClick={e => e.stopPropagation()}>
-                                          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 rounded-t-[3.5rem]">
-                                            <div className="flex flex-col gap-1">
-                                              <p className="text-[14px] font-black uppercase text-[#0067b1] tracking-[0.25em] flex items-center gap-3">
-                                                <IconComponent size={22} /> {dodatek.label}
-                                              </p>
-                                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Wariant: {nowyWariant.tryb}</p>
-                                            </div>
-                                            <button onClick={() => setExpandedDodatek(null)} className="text-slate-400 hover:text-red-500 bg-white p-3 rounded-full shadow-lg border border-slate-100 transition-all active:scale-90">
-                                              <XCircle size={26} />
-                                            </button>
-                                          </div>
-                                          
-                                          <div className="p-8 overflow-y-auto no-scrollbar space-y-3 flex-1">
-                                            {currentMultiOptions.map(opt => {
-                                              const selectedArray = nowyWariant.dodatki[dodatek.id] || [];
-                                              const isMultiSelected = selectedArray.includes(opt);
-                                              return (
-                                                <button
-                                                  key={opt}
-                                                  onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e, true)}
-                                                  className={`w-full py-5 px-6 rounded-3xl text-[10px] font-black tracking-wide text-left transition-all border-2 flex items-center justify-between gap-5 ${isMultiSelected ? 'bg-blue-50 border-[#0067b1] text-[#0067b1] shadow-inner' : 'bg-white border-slate-100 text-slate-500 hover:bg-blue-50/30 hover:border-blue-200'}`}
-                                                >
-                                                  <span className="leading-tight flex-1 text-[11px] font-black text-[#1e293b]">{opt}</span>
-                                                  {isMultiSelected ? (
-                                                    <CheckCircle size={24} className="text-[#0067b1] shrink-0" />
-                                                  ) : (
-                                                    <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-200 shrink-0"></div>
-                                                  )}
-                                                </button>
-                                              );
-                                            })}
-                                          </div>
-                                          
-                                          <div className="p-8 border-t border-slate-100 bg-slate-50 rounded-b-[3.5rem]">
-                                            <button onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }} className="w-full py-6 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white text-[13px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-blue-500/40 hover:scale-[1.01] active:scale-95 transition-all">
-                                              Zatwierdź klauzule
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="block md:hidden mt-8">
-                        {validationError && (
-                          <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
-                            <XCircle size={18} /> {validationError}
-                          </div>
-                        )}
-                        <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
-                          <Plus size={26} /> Dodaj wariant
-                        </button>
-                      </div>
-
-                    </div>
-                  </div>
-                </section>
-              </div>
-            </div>
-
-            {oferta.warianty.length > 0 && (
-              <div className="w-full mt-4 animate-in fade-in slide-in-from-bottom-8">
+          {wybranyProdukt === 'auto' ? (
+            <div className="flex flex-col gap-10">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
                 
-                <div className="flex flex-col md:flex-row items-center justify-between border-b border-slate-200 pb-5 mb-8 gap-6">
-                  <h2 className="text-[13px] font-black uppercase tracking-[0.2em] text-[#0067b1] flex items-center gap-3 ml-2">
-                    <Layers size={22} /> Przygotowane Warianty ({oferta.warianty.length})
-                  </h2>
-                  <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
-                    
-                    {/* Sektor wyboru stopki dla wygenerowanego PDFa */}
-                    <div className="flex items-center gap-3 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
-                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 shrink-0">
-                            <UserCircle size={14} /> Stopka PDF:
-                        </span>
-                        <select 
-                          className="text-[10px] font-black text-[#0067b1] uppercase tracking-wider outline-none bg-transparent cursor-pointer w-full"
-                          value={wystawJako}
-                          onChange={(e) => setWystawJako(e.target.value)}
-                        >
-                          <option value="self">Własne (Moje dane)</option>
-                          <option value="manager">Menedżer (Bartek)</option>
-                        </select>
-                    </div>
+                <div className="lg:col-span-4 space-y-6">
+                  <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
+                    <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
+                      <LayoutDashboard size={18} /> Podmiot ubezpieczony
+                    </h2>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ubezpieczony (Imię i Nazwisko / Firma)</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black text-slate-800 shadow-sm" value={oferta.klient.nazwa} onChange={(e) => handleInputChange('klient', 'nazwa', e.target.value, formatTitleCaseOferty)} />
+                      </div>
 
-                    <button onClick={zapiszWBazie} disabled={saving} className="px-8 py-4 bg-white text-slate-700 font-black rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all w-full sm:w-auto"> 
-                      {saving ? <Loader2 className="animate-spin" size={18} /> : <Save className="text-[#0067b1]" size={18}/>} Zapisz ofertę 
-                    </button>
-                    <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto"> 
-                      <FileText size={18} /> Generuj PDF oferty
-                    </button>
-                  </div>
+                      <div className="flex items-center gap-4 bg-blue-50/30 p-4 rounded-2xl border border-blue-100 shadow-sm">
+                          <input type="checkbox" checked={oferta.klient.czyLeasing} onChange={(e) => handleInputChange('klient', 'czyLeasing', e.target.checked)} className="w-6 h-6 rounded-lg text-[#0067b1] border-slate-300 focus:ring-[#0067b1]" />
+                          <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Leasing / Wynajem</span>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="bg-white rounded-[2rem] p-8 shadow-md border border-slate-100 relative overflow-hidden group">
+                    <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-[#0067b1] mb-8 flex items-center gap-3">
+                      <Car size={18} /> Specyfikacja pojazdu
+                    </h2>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Marka</label>
+                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.marka} onChange={(e) => handleInputChange('pojazd', 'marka', e.target.value, formatTitleCaseOferty)} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Model</label>
+                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.model} onChange={(e) => handleInputChange('pojazd', 'model', e.target.value, formatTitleCaseOferty)} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rok produkcji</label>
+                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nr Rejestracyjny</label>
+                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.3em] text-[#0067b1]" value={oferta.pojazd.nrRejestracyjny} onChange={(e) => handleInputChange('pojazd', 'nrRejestracyjny', e.target.value.toUpperCase())} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Fingerprint size={12} className="text-[#0067b1]"/> Numer VIN</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-[0.2em] text-slate-600" value={oferta.pojazd.vin} onChange={(e) => handleInputChange('pojazd', 'vin', e.target.value.toUpperCase())} />
+                      </div>
+                    </div>
+                  </section>
                 </div>
 
-                <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
-                  {oferta.warianty.map(w => (
-                    <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
-                      <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
-                        <div className="flex flex-col gap-1">
-                          <CompanyLogo firma={w.firma} />
-                          <div className="flex gap-2">
-                            <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
+                <div className="lg:col-span-8 space-y-10">
+                  <section className="bg-white rounded-[2.5rem] p-10 shadow-xl border-t-8 border-[#0067b1] relative overflow-hidden shadow-slate-200/60">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
+                      
+                      <div className="md:col-span-5 space-y-8" ref={konfiguratorRef}>
+                        <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 shadow-inner">
+                          {['OC', 'OC+AC', 'AC'].map(id => (
+                            <button 
+                              key={id} 
+                              onClick={() => {
+                                setNowyWariant({...nowyWariant, tryb: id});
+                                setNowyWariant(prev => {
+                                  const dod = {...prev.dodatki};
+                                  delete dod['klauzule_katalog'];
+                                  delete dod['klauzule_katalog_biznes'];
+                                  return {...prev, dodatki: dod};
+                                });
+                              }} 
+                              className={`flex-1 py-3.5 rounded-xl text-[11px] font-black transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 ${nowyWariant.tryb === id ? 'bg-gradient-to-br from-[#0067b1] to-blue-700 text-white shadow-lg' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
+                            > 
+                              {id} 
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Building size={16} className="text-[#0067b1]"/> Towarzystwo</label>
+                            <select className="w-full px-5 py-5 bg-white shadow-sm border-2 border-slate-200 rounded-2xl outline-none font-black text-[#0067b1] text-lg appearance-none cursor-pointer hover:border-[#0067b1]/50 transition-colors focus:border-[#0067b1]" value={nowyWariant.firma} onChange={(e) => { setNowyWariant({...nowyWariant, firma: e.target.value, dodatki: {}}); setExpandedDodatek(null); }}>
+                              {BAZA_UBEZPIECZYCIELI.map(u => <option key={u} value={u}>{u}</option>)}
+                            </select>
                           </div>
-                        </div>
-                        <div className="flex gap-1.5">
-                          <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={20} /> </button>
-                          <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={20} /> </button>
-                        </div>
-                      </div>
-                      <div className="p-8 flex-1 flex flex-col justify-between bg-white">
-                        <div className="space-y-4">
-                          {w.tryb !== 'OC' && (
-                            <div className="flex justify-between items-center border-b border-slate-50 pb-5 mb-5 uppercase">
-                              <span className="text-slate-400 text-[10px] font-black">Suma:</span>
-                              <span className="text-[#0067b1] bg-blue-50/80 px-4 py-1.5 rounded-xl font-black text-[11px]">{w.sumaUbezpieczenia} PLN {w.typSumy}</span>
+
+                          {nowyWariant.tryb !== 'OC' && (
+                            <div className="space-y-3 relative">
+                              <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
+                              <div className="relative">
+                                <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
+                                <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
+                              </div>
                             </div>
                           )}
-                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
-                              <span className="flex items-center gap-1.5">Odpowiedzialność OC</span> 
-                              {w.tryb !== 'AC' ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
-                          </div>
-                          <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
-                              <span className="flex items-center gap-1.5">Autocasco (AC)</span> 
-                              {w.tryb !== 'OC' ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-6">
-                            {w.tryb !== 'OC' && (
-                              <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1 shadow-sm">
-                                <Wrench size={10} /> 
-                                {w.zakresAC.metodaNaprawy}
-                                {w.firma === 'Warta' && w.zakresAC.metodaNaprawy === 'ASO' && w.zakresAC.wariantWarta ? ` (${w.zakresAC.wariantWarta})` : ''}
-                              </span>
-                            )}
-                            {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 shadow-sm"><Activity size={10} /> Stała Wartość</span>}
-                            
-                            {Object.entries(w.dodatki).map(([id, val]) => {
-                              if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                              const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
-                              const IconComponent = dKonfig && dKonfig.icon ? dKonfig.icon : Package;
-
-                              if (Array.isArray(val)) {
-                                return val.map(v => (
-                                  <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
-                                    <IconComponent size={10} className="shrink-0" /> {v}
-                                  </span> 
-                                ));
-                              }
-
-                              const label = dKonfig ? dKonfig.label : id;
-                              const displayVal = (typeof val === 'string' && val !== 'true') ? (id === 'nnw' ? `NNW: ${val}` : `${label}: ${val}`) : label;
-                              
-                              return (
-                                <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
-                                  <IconComponent size={10} className="shrink-0" /> {displayVal}
-                                </span>
-                              );
-                            })}
+                          
+                          <div className="space-y-2 relative">
+                            <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
+                            <div className="relative">
+                              <input type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
+                              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-sm tracking-widest">PLN</span>
+                            </div>
+                            <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
+                              {[1, 2, 4, 12].map(raty => (
+                                <button key={raty} onClick={() => setNowyWariant({...nowyWariant, liczbaRat: raty})} className={`flex-1 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-wider ${nowyWariant.liczbaRat === raty ? 'bg-[#0067b1] text-white' : 'text-slate-500'}`}> {raty === 1 ? '1 Rata' : `${raty} Raty`} </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        <div className="pt-10 border-t border-slate-100 text-center mt-8">
-                            <div className="flex items-center justify-center gap-1">
-                             <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
-                             <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
+
+                        <div className="hidden md:block mt-8">
+                          {validationError && (
+                            <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 animate-in fade-in zoom-in shadow-sm">
+                              <XCircle size={18} /> {validationError}
                             </div>
+                          )}
+                          <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                            <Plus size={26} /> Dodaj wariant
+                          </button>
                         </div>
                       </div>
+
+                      <div className="md:col-span-7 space-y-8">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+                          <p className="text-[12px] font-black text-[#0067b1] uppercase tracking-[0.2em] flex items-center gap-3"><Package size={20} /> Konfiguracja Rozszerzeń</p>
+                          <Layers size={20} className="text-[#0067b1]/30" />
+                        </div>
+
+                        <div className="space-y-10 bg-blue-50/40 p-8 rounded-[3.5rem] border border-blue-100 shadow-inner">
+                          {(nowyWariant.tryb === 'OC+AC' || nowyWariant.tryb === 'AC') && (
+                            <div className="space-y-4">
+                              <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><ShieldCheck size={14}/> Zakres Autocasco</p>
+                              
+                              <div className={`grid grid-cols-2 lg:grid-cols-4 bg-white/50 p-1.5 rounded-[2rem] border-2 shadow-sm gap-1 transition-colors ${errors.metodaNaprawy ? 'border-red-400 bg-red-50/50' : 'border-blue-100'}`}>
+                                {['Kosztorys', 'Minicasco', 'Partnerski', 'ASO'].map(metoda => (
+                                  <button 
+                                    key={metoda} 
+                                    onClick={() => setNowyWariant({
+                                      ...nowyWariant, 
+                                      zakresAC: {
+                                        ...nowyWariant.zakresAC, 
+                                        metodaNaprawy: metoda,
+                                        wariantWarta: (nowyWariant.firma === 'Warta' && metoda === 'ASO') ? (nowyWariant.zakresAC.wariantWarta || 'Komfort') : ''
+                                      }
+                                    })} 
+                                    className={`py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-tighter ${nowyWariant.zakresAC.metodaNaprawy === metoda ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:text-[#0067b1] hover:bg-white'}`}
+                                  > 
+                                    {metoda} 
+                                  </button>
+                                ))}
+                              </div>
+
+                              {nowyWariant.firma === 'Warta' && nowyWariant.zakresAC.metodaNaprawy === 'ASO' && (
+                                <div className="animate-in fade-in slide-in-from-top-2">
+                                  <div className="flex gap-2 p-1.5 bg-blue-50/80 rounded-2xl border border-blue-100 shadow-inner">
+                                    <button 
+                                      onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Standard'}})} 
+                                      className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Standard' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
+                                    > 
+                                      <AlertTriangle size={14} /> Warta Standard
+                                    </button>
+                                    <button 
+                                      onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, wariantWarta: 'Komfort'}})} 
+                                      className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-wider flex items-center justify-center gap-2 ${nowyWariant.zakresAC.wariantWarta === 'Komfort' ? 'bg-[#0067b1] text-white shadow-md' : 'text-[#0067b1]/70 hover:bg-white hover:text-[#0067b1]'}`}
+                                    > 
+                                      <ShieldCheck size={14} /> Warta Komfort
+                                    </button>
+                                  </div>
+                                  <div className="mt-2.5 text-[9px] font-bold text-[#0067b1]/70 uppercase tracking-widest text-center px-2 flex items-center justify-center gap-1.5">
+                                    <Activity size={12} />
+                                    {nowyWariant.zakresAC.wariantWarta === 'Komfort' 
+                                      ? "Zniesiony udział własny dla młodych kierowców (Brak potrąceń)." 
+                                      : "Udział własny 10% przy młodych kierowcach (aby wykupić zaznacz podwyższone ryzyko)."}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, stalaSuma: !nowyWariant.zakresAC.stalaSuma}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.stalaSuma ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                                  <Activity size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Stała wartość pojazdu</span>
+                                </button>
+                                <button onClick={() => setNowyWariant({...nowyWariant, zakresAC: {...nowyWariant.zakresAC, nieredukcyjna: !nowyWariant.zakresAC.nieredukcyjna}})} className={`flex flex-row items-center justify-center px-5 py-4 rounded-[1.5rem] border-2 transition-all gap-3 min-h-[4rem] group ${nowyWariant.zakresAC.nieredukcyjna ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1] shadow-md' : 'bg-white border-blue-100 text-[#0067b1] hover:border-blue-200'}`}>
+                                  <ShieldCheck size={20} className="shrink-0" /> <span className="text-[10px] font-black uppercase tracking-widest text-center leading-tight">Brak redukcji sumy</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-4">
+                            <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.25em] ml-2 flex items-center gap-2"><Star size={14}/> Dodatki ubezpieczyciela</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                              {aktualnaKonfigDodatkow
+                                .filter(dodatek => !dodatek.showIn || dodatek.showIn.includes(nowyWariant.tryb))
+                                .map(dodatek => {
+                                  const IconComponent = dodatek.icon || Package;
+                                  const isActive = !!nowyWariant.dodatki[dodatek.id];
+                                  const isExpanded = expandedDodatek === dodatek.id;
+                                  
+                                  const isMulti = !!dodatek.getMultiOptions;
+                                  const currentMultiOptions = isMulti ? dodatek.getMultiOptions(nowyWariant.tryb) : [];
+                                  
+                                  let displayLabel = dodatek.label;
+                                  if (isActive && !isMulti && typeof nowyWariant.dodatki[dodatek.id] === 'string' && nowyWariant.dodatki[dodatek.id] !== 'true') {
+                                    displayLabel = `${dodatek.label}: ${nowyWariant.dodatki[dodatek.id]}`;
+                                  } else if (isActive && isMulti && Array.isArray(nowyWariant.dodatki[dodatek.id])) {
+                                    displayLabel = `${dodatek.label} (${nowyWariant.dodatki[dodatek.id].length})`;
+                                  }
+
+                                  return (
+                                    <div key={dodatek.id} className="flex flex-col gap-2">
+                                      <button onClick={() => handleDodatekToggle(dodatek)} className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-3 h-28 relative ${isActive ? 'bg-gradient-to-br from-[#0067b1] to-blue-800 text-white border-[#0067b1]' : 'bg-white border-blue-100 text-slate-700'}`}>
+                                        <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-white/20' : 'bg-blue-50 text-[#0067b1]'}`}><IconComponent size={24} /></div>
+                                        <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-center">{displayLabel}</span>
+                                        {isActive && <CheckCircle size={16} className="absolute top-3 right-3 text-white/80" />}
+                                      </button>
+                                      
+                                      {isExpanded && !isMulti && dodatek.options && (
+                                        <div className="flex flex-col gap-1.5 animate-in slide-in-from-top-2">
+                                          {dodatek.options.map(opt => (
+                                            <button key={opt} onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e)} className="py-3 px-2 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white border-2 border-blue-50 text-[#0067b1] hover:bg-[#0067b1] hover:text-white shadow-sm"> {opt} </button>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {isExpanded && isMulti && (
+                                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#001c3d]/60 p-6 backdrop-blur-md animate-in fade-in" onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }}>
+                                          <div className="bg-white rounded-[3.5rem] w-full max-w-xl shadow-2xl flex flex-col max-h-[80vh] animate-in zoom-in-95 border border-white/20" onClick={e => e.stopPropagation()}>
+                                            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 rounded-t-[3.5rem]">
+                                              <div className="flex flex-col gap-1">
+                                                <p className="text-[14px] font-black uppercase text-[#0067b1] tracking-[0.25em] flex items-center gap-3">
+                                                  <IconComponent size={22} /> {dodatek.label}
+                                                </p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Wariant: {nowyWariant.tryb}</p>
+                                              </div>
+                                              <button onClick={() => setExpandedDodatek(null)} className="text-slate-400 hover:text-red-500 bg-white p-3 rounded-full shadow-lg border border-slate-100 transition-all active:scale-90">
+                                                <XCircle size={26} />
+                                              </button>
+                                            </div>
+                                            
+                                            <div className="p-8 overflow-y-auto no-scrollbar space-y-3 flex-1">
+                                              {currentMultiOptions.map(opt => {
+                                                const selectedArray = nowyWariant.dodatki[dodatek.id] || [];
+                                                const isMultiSelected = selectedArray.includes(opt);
+                                                return (
+                                                  <button
+                                                    key={opt}
+                                                    onClick={(e) => handleSubOptionSelect(dodatek.id, opt, e, true)}
+                                                    className={`w-full py-5 px-6 rounded-3xl text-[10px] font-black tracking-wide text-left transition-all border-2 flex items-center justify-between gap-5 ${isMultiSelected ? 'bg-blue-50 border-[#0067b1] text-[#0067b1] shadow-inner' : 'bg-white border-slate-100 text-slate-500 hover:bg-blue-50/30 hover:border-blue-200'}`}
+                                                  >
+                                                    <span className="leading-tight flex-1 text-[11px] font-black text-[#1e293b]">{opt}</span>
+                                                    {isMultiSelected ? (
+                                                      <CheckCircle size={24} className="text-[#0067b1] shrink-0" />
+                                                    ) : (
+                                                      <div className="w-[24px] h-[24px] rounded-full border-2 border-slate-200 shrink-0"></div>
+                                                    )}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                            
+                                            <div className="p-8 border-t border-slate-100 bg-slate-50 rounded-b-[3.5rem]">
+                                              <button onClick={(e) => { e.stopPropagation(); setExpandedDodatek(null); }} className="w-full py-6 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white text-[13px] font-black uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-blue-500/40 hover:scale-[1.01] active:scale-95 transition-all">
+                                                Zatwierdź klauzule
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="block md:hidden mt-8">
+                          {validationError && (
+                            <div className="bg-red-50 text-red-600 p-4 rounded-2xl border border-red-100 flex items-center gap-3 font-bold text-[11px] uppercase tracking-wider mb-4 shadow-sm">
+                              <XCircle size={18} /> {validationError}
+                            </div>
+                          )}
+                          <button onClick={dodajWariant} className={`w-full bg-gradient-to-r from-[#0067b1] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.25em] shadow-xl shadow-blue-500/30 transition-all flex items-center justify-center gap-4`}>
+                            <Plus size={26} /> Dodaj wariant
+                          </button>
+                        </div>
+
+                      </div>
                     </div>
-                  ))}
+                  </section>
                 </div>
               </div>
-            )}
-          </div>
+
+              {oferta.warianty.length > 0 && (
+                <div className="w-full mt-4 animate-in fade-in slide-in-from-bottom-8">
+                  
+                  <div className="flex flex-col md:flex-row items-center justify-between border-b border-slate-200 pb-5 mb-8 gap-6">
+                    <h2 className="text-[13px] font-black uppercase tracking-[0.2em] text-[#0067b1] flex items-center gap-3 ml-2">
+                      <Layers size={22} /> Przygotowane Warianty ({oferta.warianty.length})
+                    </h2>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+                      
+                      {/* Sektor wyboru stopki dla wygenerowanego PDFa */}
+                      <div className="flex items-center gap-3 bg-white px-5 py-3.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
+                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 shrink-0">
+                              <UserCircle size={14} /> Stopka PDF:
+                          </span>
+                          <select 
+                            className="text-[10px] font-black text-[#0067b1] uppercase tracking-wider outline-none bg-transparent cursor-pointer w-full"
+                            value={wystawJako}
+                            onChange={(e) => setWystawJako(e.target.value)}
+                          >
+                            <option value="self">Własne (Moje dane)</option>
+                            <option value="manager">Menedżer (Bartek)</option>
+                          </select>
+                      </div>
+
+                      <button onClick={zapiszWBazie} disabled={saving} className="px-8 py-4 bg-white text-slate-700 font-black rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all w-full sm:w-auto"> 
+                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save className="text-[#0067b1]" size={18}/>} Zapisz ofertę 
+                      </button>
+                      <button onClick={handleGeneratePdfNative} className="px-8 py-4 bg-gradient-to-r from-[#0067b1] to-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto"> 
+                        <FileText size={18} /> Generuj PDF oferty
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-nowrap overflow-x-auto gap-6 pb-8 snap-x xl:snap-none no-scrollbar">
+                    {oferta.warianty.map(w => (
+                      <div key={w.id} className="w-[85vw] sm:w-[310px] shrink-0 snap-center xl:snap-align-none bg-white rounded-[3rem] shadow-lg border-2 border-slate-50 overflow-hidden flex flex-col min-h-[420px] animate-in zoom-in-95">
+                        <div className="p-7 bg-gradient-to-br from-blue-50/50 to-white border-b border-slate-100 flex justify-between items-center">
+                          <div className="flex flex-col gap-1">
+                            <CompanyLogo firma={w.firma} />
+                            <div className="flex gap-2">
+                              <span className="text-[8px] font-black px-3 py-1 bg-[#0067b1] text-white rounded-full uppercase tracking-widest">{w.tryb}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => edytujWariant(w)} className="text-slate-300 hover:text-[#0067b1] p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Edytuj ten wariant"> <Edit2 size={20} /> </button>
+                            <button onClick={() => setOferta(p => ({...p, warianty: p.warianty.filter(x => x.id !== w.id)}))} className="text-slate-300 hover:text-red-500 p-3 bg-white shadow-sm rounded-full active:scale-95 transition-all" title="Usuń wariant"> <Trash2 size={20} /> </button>
+                          </div>
+                        </div>
+                        <div className="p-8 flex-1 flex flex-col justify-between bg-white">
+                          <div className="space-y-4">
+                            {w.tryb !== 'OC' && (
+                              <div className="flex justify-between items-center border-b border-slate-50 pb-5 mb-5 uppercase">
+                                <span className="text-slate-400 text-[10px] font-black">Suma:</span>
+                                <span className="text-[#0067b1] bg-blue-50/80 px-4 py-1.5 rounded-xl font-black text-[11px]">{w.sumaUbezpieczenia} PLN {w.typSumy}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
+                                <span className="flex items-center gap-1.5">Odpowiedzialność OC</span> 
+                                {w.tryb !== 'AC' ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 border-t border-slate-50 pt-4"> 
+                                <span className="flex items-center gap-1.5">Autocasco (AC)</span> 
+                                {w.tryb !== 'OC' ? <CheckCircle size={18} className="text-green-500" /> : <XCircle size={18} className="text-slate-200" />} 
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-6">
+                              {w.tryb !== 'OC' && (
+                                <span className="text-[8px] bg-[#0067b1] text-white px-2 py-1.5 rounded-lg font-black uppercase flex items-center gap-1 shadow-sm">
+                                  <Wrench size={10} /> 
+                                  {w.zakresAC.metodaNaprawy}
+                                  {w.firma === 'Warta' && w.zakresAC.metodaNaprawy === 'ASO' && w.zakresAC.wariantWarta ? ` (${w.zakresAC.wariantWarta})` : ''}
+                                </span>
+                              )}
+                              {w.tryb !== 'OC' && w.zakresAC.stalaSuma && <span className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1 shadow-sm"><Activity size={10} /> Stała Wartość</span>}
+                              
+                              {Object.entries(w.dodatki).map(([id, val]) => {
+                                if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                                const dKonfig = (DODATKI_KONFIG[w.firma] || DODATKI_KONFIG["Default"]).find(d => d.id === id);
+                                const IconComponent = dKonfig && dKonfig.icon ? dKonfig.icon : Package;
+
+                                if (Array.isArray(val)) {
+                                  return val.map(v => (
+                                    <span key={`${id}-${v}`} className="text-[8px] bg-amber-50 text-amber-800 px-2 py-1.5 rounded-lg font-black uppercase border border-amber-200 flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                      <IconComponent size={10} className="shrink-0" /> {v}
+                                    </span> 
+                                  ));
+                                }
+
+                                const label = dKonfig ? dKonfig.label : id;
+                                const displayVal = (typeof val === 'string' && val !== 'true') ? (id === 'nnw' ? `NNW: ${val}` : `${label}: ${val}`) : label;
+                                
+                                return (
+                                  <span key={id} className="text-[8px] bg-blue-50 text-[#0067b1] px-2 py-1.5 rounded-lg font-black uppercase border border-blue-100 flex items-center gap-1.5 whitespace-nowrap overflow-hidden max-w-full text-ellipsis shadow-sm">
+                                    <IconComponent size={10} className="shrink-0" /> {displayVal}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="pt-10 border-t border-slate-100 text-center mt-8">
+                              <div className="flex items-center justify-center gap-1">
+                               <p className="text-xl font-black text-[#0067b1] leading-none tracking-tighter"> {w.skladka} </p>
+                               <span className="text-sm font-black text-[#0067b1]/30">PLN</span>
+                              </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[50vh] text-center bg-white rounded-[3rem] border border-slate-100 shadow-sm">
+              <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
+                <Package size={40} className="text-[#0067b1]/30" />
+              </div>
+              <h3 className="text-xl font-black text-[#0067b1] uppercase tracking-[0.2em]" style={{fontFamily: 'Semplicita Pro'}}>Produkt: {productTabs.find(t => t.id === wybranyProdukt)?.label}</h3>
+              <p className="text-slate-400 font-bold mt-3 text-sm max-w-md">Moduł w przygotowaniu. Kod dla tego produktu będziemy tworzyć i integrować w kolejnych etapach prac.</p>
+            </div>
+          )}
         </main>
 
         <footer className="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-200 py-4 px-12 z-40 hidden sm:block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
