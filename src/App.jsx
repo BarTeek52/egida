@@ -900,24 +900,55 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               let simMaxY = startY + 36; 
               
               let c2Y_sim = startY + 7;
-              const addC2 = (text) => { 
-                  const lines = doc.splitTextToSize(text, 46);
-                  c2Y_sim += 5.5 + ((lines.length - 1) * 3.5); 
+              const addC2 = (prefix, suffix = "") => { 
+                  doc.setFontSize(7.5);
+                  doc.setFont(getFont("Kiro"), "bold");
+                  const prefixW = doc.getTextWidth(prefix);
+                  if (suffix) {
+                      doc.setFont(getFont("Kiro"), "normal");
+                      const remW = Math.max(46 - prefixW, 10);
+                      const lines = doc.splitTextToSize(suffix, remW);
+                      if (lines.length > 1) {
+                          c2Y_sim += 5.5 + ((lines.length - 1) * 3.5);
+                      } else {
+                          c2Y_sim += 5.5;
+                      }
+                  } else {
+                      const lines = doc.splitTextToSize(prefix, 46);
+                      c2Y_sim += 5.5 + ((lines.length - 1) * 3.5);
+                  }
               };
+
               if (w.tryb !== 'AC') addC2("OC posiadacza pojazdu");
               if (w.tryb !== 'OC') {
                   let opcjaAC = w.zakresAC?.metodaNaprawy || '';
                   if (opcjaAC === 'ASO') opcjaAC = 'Serwisowy';
-                  addC2(`Autocasco, wariant ${opcjaAC}`);
+                  addC2("Autocasco, wariant ", opcjaAC);
               }
               if (w.dodatki['nnw']) {
-                  addC2(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW - suma ubezpieczenia ${w.dodatki['nnw']}` : "NNW");
+                  let nnwV = w.dodatki['nnw'];
+                  if (typeof nnwV === 'string' && nnwV !== 'true') {
+                      addC2("NNW - ", `suma ${nnwV}`);
+                  } else {
+                      addC2("NNW");
+                  }
               }
               const assValSim = w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc'];
               if (assValSim) {
-                  addC2(typeof assValSim === 'string' && assValSim !== 'true' ? `Assistance - ${assValSim}` : "Assistance");
+                  if (typeof assValSim === 'string' && assValSim !== 'true') {
+                      addC2("Assistance - ", assValSim);
+                  } else {
+                      addC2("Assistance");
+                  }
               }
-              if (w.dodatki['szyby']) addC2("Ubezpieczenie Szyb");
+              if (w.dodatki['szyby']) {
+                  let szVal = w.dodatki['szyby'];
+                  if (typeof szVal === 'string' && szVal !== 'true') {
+                      addC2("Szyby - ", szVal);
+                  } else {
+                      addC2("Ubezpieczenie Szyb");
+                  }
+              }
               
               if (c2Y_sim > simMaxY) simMaxY = c2Y_sim;
 
@@ -1029,18 +1060,21 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   doc.text("SUMA UBEZPIECZENIA", colCenterX, startY + 27, { align: 'center' });
                   
                   doc.setTextColor(...slate800);
-                  doc.setFontSize(10);
-                  doc.setFont(getFont("Kiro"), "bold");
                   
-                  const valText = `${w.sumaUbezpieczenia} PLN `;
+                  const valText = `${w.sumaUbezpieczenia} PLN`;
                   const typText = w.typSumy;
                   
+                  doc.setFontSize(10);
+                  doc.setFont(getFont("Kiro"), "bold");
                   const valW = doc.getTextWidth(valText);
+                  
                   doc.setFontSize(6);
                   doc.setFont(getFont("Kiro"), "normal");
                   const typW = doc.getTextWidth(typText);
                   
-                  const totalW = valW + typW;
+                  const spaceW = doc.getTextWidth(" ");
+                  const totalW = valW + spaceW + typW;
+                  
                   const startValX = colCenterX - (totalW / 2);
                   
                   doc.setFontSize(10);
@@ -1050,11 +1084,11 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   doc.setFontSize(6);
                   doc.setFont(getFont("Kiro"), "normal");
                   doc.setTextColor(...slate500);
-                  doc.text(typText, startValX + valW, startY + 31.5);
+                  doc.text(typText, startValX + valW + spaceW, startY + 31.5);
               }
 
               let c2Y = startY + 7;
-              const drawCheckReal = (text, type) => {
+              const drawCheckReal = (prefix, suffix = "") => {
                   doc.setDrawColor(...palladaBlue);
                   doc.setLineWidth(0.3);
                   doc.circle(52.5, c2Y - 1, 1.8, 'S');
@@ -1063,27 +1097,66 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   
                   doc.setTextColor(...slate800);
                   doc.setFontSize(7.5);
-                  doc.setFont(getFont("Kiro"), "bold");
-                  const lines = doc.splitTextToSize(text, 46);
-                  doc.text(lines, 58, c2Y);
-                  c2Y += 5.5 + ((lines.length - 1) * 3.5);
+                  
+                  if (suffix) {
+                      doc.setFont(getFont("Kiro"), "bold");
+                      const prefixW = doc.getTextWidth(prefix);
+                      doc.text(prefix, 58, c2Y);
+                      
+                      doc.setFont(getFont("Kiro"), "normal");
+                      const remW = Math.max(46 - prefixW, 10);
+                      const lines = doc.splitTextToSize(suffix, remW);
+                      doc.text(lines[0], 58 + prefixW, c2Y);
+                      
+                      if (lines.length > 1) {
+                          let nextY = c2Y + 3.5;
+                          for (let k = 1; k < lines.length; k++) {
+                              doc.text(lines[k], 58, nextY);
+                              nextY += 3.5;
+                          }
+                          c2Y = nextY + 2;
+                      } else {
+                          c2Y += 5.5;
+                      }
+                  } else {
+                      doc.setFont(getFont("Kiro"), "bold");
+                      const lines = doc.splitTextToSize(prefix, 46);
+                      doc.text(lines, 58, c2Y);
+                      c2Y += 5.5 + ((lines.length - 1) * 3.5);
+                  }
               };
 
-              if (w.tryb !== 'AC') drawCheckReal("OC posiadacza pojazdu", "OC");
+              if (w.tryb !== 'AC') drawCheckReal("OC posiadacza pojazdu");
               if (w.tryb !== 'OC') {
                   let opcjaAC = w.zakresAC?.metodaNaprawy || '';
                   if (opcjaAC === 'ASO') opcjaAC = 'Serwisowy';
-                  drawCheckReal(`Autocasco, wariant ${opcjaAC}`, "AC");
+                  drawCheckReal("Autocasco, wariant ", opcjaAC);
               }
               if (w.dodatki['nnw']) {
-                  drawCheckReal(typeof w.dodatki['nnw'] === 'string' && w.dodatki['nnw'] !== 'true' ? `NNW - suma ubezpieczenia ${w.dodatki['nnw']}` : "NNW", "NNW");
+                  let nnwV = w.dodatki['nnw'];
+                  if (typeof nnwV === 'string' && nnwV !== 'true') {
+                      drawCheckReal("NNW - ", `suma ${nnwV}`);
+                  } else {
+                      drawCheckReal("NNW");
+                  }
               }
               
               const assVal = w.dodatki['ass'] || w.dodatki['car_ass'] || w.dodatki['warta_pomoc'];
               if (assVal) {
-                  drawCheckReal(typeof assVal === 'string' && assVal !== 'true' ? `Assistance - ${assVal}` : "Assistance", "ASS");
+                  if (typeof assVal === 'string' && assVal !== 'true') {
+                      drawCheckReal("Assistance - ", assVal);
+                  } else {
+                      drawCheckReal("Assistance");
+                  }
               }
-              if (w.dodatki['szyby']) drawCheckReal("Ubezpieczenie Szyb", "SZYBY");
+              if (w.dodatki['szyby']) {
+                  let szVal = w.dodatki['szyby'];
+                  if (typeof szVal === 'string' && szVal !== 'true') {
+                      drawCheckReal("Szyby - ", szVal);
+                  } else {
+                      drawCheckReal("Ubezpieczenie Szyb");
+                  }
+              }
 
               let c3Y = startY + 7;
               const drawBulletReal = (text) => {
