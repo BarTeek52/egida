@@ -1640,6 +1640,17 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                                 <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
                                 <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
                               </div>
+                              <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-2">
+                                {['Brutto', 'Netto', 'Netto + 50% VAT'].map(typ => (
+                                  <button 
+                                    key={typ} 
+                                    onClick={() => setNowyWariant({...nowyWariant, typSumy: typ})} 
+                                    className={`flex-1 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-wider ${nowyWariant.typSumy === typ ? 'bg-[#0067b1] text-white shadow-md' : 'text-slate-500 hover:bg-white hover:text-[#0067b1]'}`}
+                                  > 
+                                    {typ} 
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           )}
                           
