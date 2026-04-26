@@ -652,7 +652,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
   const [saving, setSaving] = useState(false);
   const [pdfMode, setPdfMode] = useState(false);
   
-  // Zaktualizowano domyślnie aktywną zakładkę z 'Komunikacja' na 'auto'
   const [wybranyProdukt, setWybranyProdukt] = useState('auto');
   
   const [wystawJako, setWystawJako] = useState('self');
@@ -672,7 +671,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
     warianty: []
   });
 
-  // Dodana definicja nowych zakładek z ikonami (moduł ofert)
   const productTabs = [
     { id: 'auto', label: 'Auto', icon: CarFront },
     { id: 'nieruchomosc', label: 'Nieruchomość', icon: Building },
@@ -948,7 +946,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               if (c2Y_sim > simMaxY) simMaxY = c2Y_sim;
 
               let c3Y_sim = startY + 7;
-              c3Y_sim += 5.5; // Zwiększenie pod nagłówek "Rozszerzenia:"
+              c3Y_sim += 5.5; 
               const addC3 = (text) => {
                   const lines = doc.splitTextToSize(text, 48);
                   c3Y_sim += (lines.length * 4);
@@ -1065,23 +1063,34 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   doc.setFont(getFont("Kiro"), "bold");
                   const valW = doc.getTextWidth(valText);
                   
-                  doc.setFontSize(6);
+                  doc.setFontSize(5.5);
                   doc.setFont(getFont("Kiro"), "normal");
                   const typW = doc.getTextWidth(typText);
                   
                   const spaceW = doc.getTextWidth(" ");
                   const totalW = valW + spaceW + typW;
                   
-                  const startValX = colCenterX - (totalW / 2);
-                  
-                  doc.setFontSize(10);
-                  doc.setFont(getFont("Kiro"), "bold");
-                  doc.text(valText, startValX, startY + 31.5);
-                  
-                  doc.setFontSize(6);
-                  doc.setFont(getFont("Kiro"), "normal");
-                  doc.setTextColor(...slate500);
-                  doc.text(typText, startValX + valW + spaceW, startY + 31.5);
+                  if (totalW > 31) {
+                      doc.setFontSize(10);
+                      doc.setFont(getFont("Kiro"), "bold");
+                      doc.text(valText, colCenterX, startY + 31, { align: 'center' });
+                      
+                      doc.setFontSize(5.5);
+                      doc.setFont(getFont("Kiro"), "normal");
+                      doc.setTextColor(...slate500);
+                      doc.text(typText, colCenterX, startY + 34, { align: 'center' });
+                  } else {
+                      const startValX = colCenterX - (totalW / 2);
+                      
+                      doc.setFontSize(10);
+                      doc.setFont(getFont("Kiro"), "bold");
+                      doc.text(valText, startValX, startY + 31.5);
+                      
+                      doc.setFontSize(5.5);
+                      doc.setFont(getFont("Kiro"), "normal");
+                      doc.setTextColor(...slate500);
+                      doc.text(typText, startValX + valW + spaceW, startY + 31.5);
+                  }
               }
 
               let c2Y = startY + 7;
@@ -1520,7 +1529,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
 
         <main className="max-w-7xl mx-auto px-6 py-8">
           
-          {/* Zaktualizowany widok zakładek z Ikonami */}
           <div className="flex bg-white p-1.5 rounded-[1.5rem] border border-slate-200 shadow-sm mb-8 overflow-x-auto no-scrollbar gap-2">
             {productTabs.map(prod => {
               const Icon = prod.icon;
@@ -1585,7 +1593,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Rok produkcji</label>
-                          <input className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+                          <input inputMode="numeric" pattern="[0-9]*" className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-[#0067b1] transition-all text-sm font-black uppercase tracking-tight" value={oferta.pojazd.rokProdukcji || ""} onChange={(e) => handleInputChange('pojazd', 'rokProdukcji', e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nr Rejestracyjny</label>
@@ -1637,7 +1645,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                             <div className="space-y-3 relative">
                               <label className="text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><ShieldCheck size={16} className="text-[#0067b1]"/> Suma Ubezpieczenia</label>
                               <div className="relative">
-                                <input type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
+                                <input inputMode="decimal" type="text" className={`w-full pl-6 pr-16 py-5 bg-white shadow-sm border-2 rounded-2xl outline-none font-black text-slate-800 text-xl transition-all ${errors.suma ? 'border-red-500 ring-2 ring-red-100' : 'border-slate-200 focus:border-[#0067b1]'}`} value={nowyWariant.sumaUbezpieczenia} onChange={(e) => handleKwotaChange('sumaUbezpieczenia', e.target.value)} onBlur={() => handleKwotaBlur('sumaUbezpieczenia')} placeholder="Suma" />
                                 <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm tracking-widest">PLN</span>
                               </div>
                               <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-2">
@@ -1657,7 +1665,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                           <div className="space-y-2 relative">
                             <label className="text-[10px] font-black text-[#0067b1] uppercase tracking-[0.15em] ml-1 flex items-center gap-2"><Activity size={16} /> Łączna składka</label>
                             <div className="relative">
-                              <input type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
+                              <input inputMode="decimal" type="text" className={`w-full pl-6 pr-16 py-5 bg-blue-50/40 border-2 rounded-2xl outline-none font-black text-[#0067b1] text-xl transition-all shadow-inner ${errors.skladka ? 'border-red-500 ring-2 ring-red-100' : 'border-[#0067b1]/40 focus:border-[#0067b1]'}`} value={nowyWariant.skladka} onChange={(e) => handleKwotaChange('skladka', e.target.value)} onBlur={() => handleKwotaBlur('skladka')} placeholder="0,00" />
                               <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-[#0067b1]/40 text-sm tracking-widest">PLN</span>
                             </div>
                             <div className="flex bg-blue-100/30 p-1.5 rounded-2xl border border-blue-200/50 mt-3">
