@@ -892,11 +892,6 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               const w = oferta.warianty[i];
               let startY = currentY;
               
-              let naprawaTxt = `Naprawa: ${w.zakresAC?.metodaNaprawy || ''}`;
-              if (w.firma === 'Warta' && w.zakresAC?.metodaNaprawy === 'ASO' && w.zakresAC?.wariantWarta) {
-                  naprawaTxt = `Naprawa: ASO (Warta ${w.zakresAC.wariantWarta})`;
-              }
-
               let simMaxY = startY + 36; 
               
               let c2Y_sim = startY + 7;
@@ -923,7 +918,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               if (w.tryb !== 'OC') {
                   let opcjaAC = w.zakresAC?.metodaNaprawy || '';
                   if (opcjaAC === 'ASO') opcjaAC = 'Serwisowy';
-                  addC2("Autocasco, wariant ", opcjaAC);
+                  addC2("Autocasco, ", `wariant ${opcjaAC}`);
               }
               if (w.dodatki['nnw']) {
                   let nnwV = w.dodatki['nnw'];
@@ -953,17 +948,19 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               if (c2Y_sim > simMaxY) simMaxY = c2Y_sim;
 
               let c3Y_sim = startY + 7;
+              c3Y_sim += 5.5; // Zwiększenie pod nagłówek "Rozszerzenia:"
               const addC3 = (text) => {
                   const lines = doc.splitTextToSize(text, 48);
                   c3Y_sim += (lines.length * 4);
               };
-              if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) addC3("Auto wartość 100% (stała suma)");
+
+              const stalaSumaTextSim = w.firma === 'PZU S.A.' ? "Auto wartość 100%" : "Stała suma ubezpieczenia";
+
+              if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) addC3(stalaSumaTextSim);
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) addC3("Brak redukcji sumy ubezpieczenia");
-              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) addC3(naprawaTxt);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') addC3(`Assistance: ${w.dodatki['car_ass']}`);
               if (w.dodatki['ass'] && typeof w.dodatki['ass'] === 'string') addC3(`Assistance: ${w.dodatki['ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') addC3(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
-              if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') addC3(`Szyby: ${w.dodatki['szyby']}`);
               
               Object.entries(w.dodatki).forEach(([id, val]) => {
                   if (!val || ['nnw', 'ass', 'car_ass', 'szyby', 'warta_pomoc'].includes(id)) return;
@@ -1130,7 +1127,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               if (w.tryb !== 'OC') {
                   let opcjaAC = w.zakresAC?.metodaNaprawy || '';
                   if (opcjaAC === 'ASO') opcjaAC = 'Serwisowy';
-                  drawCheckReal("Autocasco, wariant ", opcjaAC);
+                  drawCheckReal("Autocasco, ", `wariant ${opcjaAC}`);
               }
               if (w.dodatki['nnw']) {
                   let nnwV = w.dodatki['nnw'];
@@ -1159,6 +1156,13 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
               }
 
               let c3Y = startY + 7;
+              
+              doc.setTextColor(...slate800);
+              doc.setFontSize(7.5);
+              doc.setFont(getFont("Kiro"), "bold");
+              doc.text("Rozszerzenia:", 107, c3Y);
+              c3Y += 5.5;
+
               const drawBulletReal = (text) => {
                   doc.setTextColor(...palladaBlue);
                   doc.setFontSize(10);
@@ -1172,13 +1176,13 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
                   c3Y += (lines.length * 4);
               };
 
-              if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) drawBulletReal("Auto wartość 100% (stała suma)");
+              const stalaSumaTextReal = w.firma === 'PZU S.A.' ? "Auto wartość 100%" : "Stała suma ubezpieczenia";
+
+              if (w.tryb !== 'OC' && w.zakresAC?.stalaSuma) drawBulletReal(stalaSumaTextReal);
               if (w.tryb !== 'OC' && w.zakresAC?.nieredukcyjna) drawBulletReal("Brak redukcji sumy ubezpieczenia");
-              if (w.tryb !== 'OC' && w.zakresAC?.metodaNaprawy) drawBulletReal(naprawaTxt);
               if (w.dodatki['car_ass'] && typeof w.dodatki['car_ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['car_ass']}`);
               if (w.dodatki['ass'] && typeof w.dodatki['ass'] === 'string') drawBulletReal(`Assistance: ${w.dodatki['ass']}`);
               if (w.dodatki['warta_pomoc'] && typeof w.dodatki['warta_pomoc'] === 'string') drawBulletReal(`Warta Pomoc: ${w.dodatki['warta_pomoc']}`);
-              if (w.dodatki['szyby'] && typeof w.dodatki['szyby'] === 'string') drawBulletReal(`Szyby: ${w.dodatki['szyby']}`);
 
               Object.entries(w.dodatki).forEach(([id, val]) => {
                   if (!val || ['nnw', 'ass', 'car_ass', 'szyby', 'warta_pomoc'].includes(id)) return;
