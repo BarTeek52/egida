@@ -819,38 +819,57 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       doc.setLineWidth(0.6);
       doc.line(15, 45, 195, 45);
 
-      let currentY = 52;
-      const drawMetaRow = (label, value, label2, value2, y) => {
-          doc.setDrawColor(...slate200);
-          doc.setLineWidth(0.2);
-          doc.line(15, y + 2, 195, y + 2);
-          
+      // Funkcja generująca wiersze metadanych z obsługą wielu linii tekstu
+      const drawMetaRow = (label, value, label2, value2, startY) => {
           doc.setFontSize(8);
           doc.setFont(getFont("Kiro"), "bold");
-          doc.setTextColor(...slate400);
-          doc.text(label, 15, y);
-          doc.setFont(getFont("Kiro"), "bold");
-          doc.setTextColor(...slate800);
-          doc.text((value || '-').toUpperCase(), 45, y);
-          
+
+          const val1 = (value || '-').toUpperCase();
+          const val2 = (value2 || '-').toUpperCase();
+
+          // Podział długiego tekstu na wiersze z uwzględnieniem szerokości kolumny
+          const lines1 = doc.splitTextToSize(val1, 55);
+          let lines2 = [];
           if (label2) {
-              doc.setFont(getFont("Kiro"), "bold");
-              doc.setTextColor(...slate400);
-              doc.text(label2, 105, y);
-              doc.setFont(getFont("Kiro"), "bold");
-              doc.setTextColor(...slate800);
-              doc.text((value2 || '-').toUpperCase(), 130, y);
+              lines2 = doc.splitTextToSize(val2, 60); // Ograniczenie dla 2. kolumny (x:130 do max x:190)
           }
+
+          // Obliczenie potrzebnej wysokości na podstawie najdłuższego bloku w tym rzędzie
+          const maxLines = Math.max(lines1.length, lines2.length || 1);
+          const lineOffset = (maxLines - 1) * 3.5;
+
+          // Rysowanie dolnej linii pod całym blokiem tekstowym
+          doc.setDrawColor(...slate200);
+          doc.setLineWidth(0.2);
+          doc.line(15, startY + lineOffset + 2, 195, startY + lineOffset + 2);
+
+          // Kolumna 1
+          doc.setTextColor(...slate400);
+          doc.text(label, 15, startY);
+          doc.setTextColor(...slate800);
+          doc.text(lines1, 45, startY);
+
+          // Kolumna 2
+          if (label2) {
+              doc.setTextColor(...slate400);
+              doc.text(label2, 105, startY);
+              doc.setTextColor(...slate800);
+              doc.text(lines2, 130, startY);
+          }
+
+          // Zwracamy pozycję Y pod narysowanym rzędem z delikatnym buforem
+          return startY + lineOffset + 6;
       };
 
+      let currentY = 52;
+
       const ubezpLabel = oferta.klient.czyLeasing ? "Użytkownik:" : "Ubezpieczony:";
-      drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, ubezpLabel, oferta.klient.nazwa, currentY);
-      currentY += 6;
+      currentY = drawMetaRow("Marka/model:", `${oferta.pojazd.marka} ${oferta.pojazd.model}`, ubezpLabel, oferta.klient.nazwa, currentY);
       const leasingOdp = oferta.klient.czyLeasing ? "TAK" : "NIE";
-      drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, "Leasing/Kredyt:", leasingOdp, currentY);
-      currentY += 6;
-      drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
-      currentY += 14;
+      currentY = drawMetaRow("Nr rejestracyjny:", oferta.pojazd.nrRejestracyjny, "Leasing/Kredyt:", leasingOdp, currentY);
+      currentY = drawMetaRow("VIN:", oferta.pojazd.vin, "Rok produkcji:", oferta.pojazd.rokProdukcji, currentY);
+      
+      currentY += 8; // Extra padding przed głowną sekcją ofert
 
       if (oferta.warianty.length > 0) {
           let tableStartY = currentY;
