@@ -1305,18 +1305,24 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       doc.setTextColor(...slate400);
       doc.setFontSize(5);
       doc.setFont(getFont("Kiro"), "bold");
-      doc.text("TWÓJ DORADCA", 195, currentY, { align: 'right' });
+      doc.text("DORADCA", 195, currentY, { align: 'right' });
 
       doc.setTextColor(...palladaBlue);
       doc.setFontSize(10);
       doc.text(pdfAuthorName, 195, currentY + 4, { align: 'right' });
 
-      let contactY = currentY + 8;
+      doc.setTextColor(...slate500);
+      doc.setFontSize(8);
+      doc.setFont(getFont("Kiro"), "bold");
+      doc.text("Pallada Ubezpieczenia", 195, currentY + 8.5, { align: 'right' });
+
+      let contactY = currentY + 13;
 
       if (pdfAuthorEmail) {
           const mailLower = pdfAuthorEmail.toLowerCase();
           doc.setFontSize(8);
           doc.setTextColor(71, 85, 105);
+          doc.setFont(getFont("Kiro"), "normal");
           doc.text(mailLower, 195, contactY, { align: 'right' });
           
           const eW = doc.getTextWidth(mailLower);
@@ -1335,6 +1341,7 @@ const OfertyModule = ({ user, userProfile, onLogout, onOpenSettings }) => {
       if (pdfAuthorPhone) {
           doc.setFontSize(8);
           doc.setTextColor(71, 85, 105);
+          doc.setFont(getFont("Kiro"), "normal");
           doc.text(pdfAuthorPhone, 195, contactY, { align: 'right' });
           
           const pW = doc.getTextWidth(pdfAuthorPhone);
@@ -2050,6 +2057,30 @@ export default function App() {
     startSidebarTimer();
   };
 
+  // OBSŁUGA HISTORII PRZEGLĄDARKI (KLAWISZ WSTECZ)
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state && e.state.tab) {
+        setActiveTab(e.state.tab);
+      } else {
+        setActiveTab('dashboard');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    // Inicjalizacja pierwszego wpisu w historii
+    window.history.replaceState({ tab: 'dashboard' }, '');
+    
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleTabChange = (tabId) => {
+    if (tabId !== activeTab) {
+      window.history.pushState({ tab: tabId }, '');
+      setActiveTab(tabId);
+    }
+  };
+
   useEffect(() => {
     startSidebarTimer();
     return () => {
@@ -2442,14 +2473,14 @@ export default function App() {
                   <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Baza Klientów Zespołu</p>
                   <p className="text-6xl font-black mt-2 leading-none" style={styles.header}>{records.length}</p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-sm font-bold text-blue-200 cursor-pointer hover:text-white" onClick={() => setActiveTab('baza')}>
+                <div className="mt-8 flex items-center gap-2 text-sm font-bold text-blue-200 cursor-pointer hover:text-white" onClick={() => handleTabChange('baza')}>
                   <ArrowUpRight size={16} /> Zarządzaj bazą
                 </div>
             </div>
             {modules.filter(m => m.id !== 'dashboard').map((mod) => (
               <button 
                 key={mod.id}
-                onClick={() => setActiveTab(mod.id)}
+                onClick={() => handleTabChange(mod.id)}
                 className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-start text-left group"
                >
                 <div className={`${mod.bg} ${mod.color} p-4 rounded-2xl mb-6 group-hover:scale-110 transition-transform`}>
@@ -2604,7 +2635,7 @@ export default function App() {
         </div>
         <h2 className="text-3xl font-black text-slate-800" style={styles.header}>Moduł {activeTab.toUpperCase()}</h2>
         <p className="text-slate-400 font-medium mt-3 max-w-sm">Trwają prace nad wdrożeniem tego modułu. Zapraszamy wkrótce.</p>
-        <button onClick={() => setActiveTab('dashboard')} className="mt-8 px-8 py-3 bg-[#0067b1] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-blue-700 transition-all">Powrót</button>
+        <button onClick={() => handleTabChange('dashboard')} className="mt-8 px-8 py-3 bg-[#0067b1] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-blue-700 transition-all">Powrót</button>
       </div>
     );
   };
@@ -2632,7 +2663,7 @@ export default function App() {
           {modules.map((mod) => (
             <button
               key={mod.id}
-              onClick={() => setActiveTab(mod.id)}
+              onClick={() => handleTabChange(mod.id)}
               className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group ${activeTab === mod.id ? 'bg-blue-50/50 shadow-sm' : 'hover:bg-slate-50'}`}
             >
               <div className={`p-2 rounded-xl transition-all ${activeTab === mod.id ? mod.color + ' bg-white shadow-sm' : 'text-slate-400 group-hover:' + mod.color}`}>
